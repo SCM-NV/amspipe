@@ -7,6 +7,8 @@ project(amspipe)
 add_executable(demo
    demo.cpp
    src/amspipe.cpp
+   src/ubjson.cpp
+   src/ubjson.hpp
    include/amspipe.hpp
 )
 

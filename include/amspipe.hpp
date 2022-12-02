@@ -3,9 +3,20 @@
 
 #include <fstream>
 #include <string>
+#include <sstream>
+#include <vector>
 
 
-class AMSPipeError : public std::runtime_error { using std::runtime_error::runtime_error; };
+namespace AMSPipe {
+
+   class Error : public std::runtime_error { using std::runtime_error::runtime_error; };
+
+   struct Message {
+      std::string name;
+      std::stringstream payload;
+   };
+
+};
 
 
 class AMSCallPipe {
@@ -14,17 +25,22 @@ class AMSCallPipe {
 
       AMSCallPipe(const std::string& filename="call_pipe");
 
-      std::string next_method();
-      void method_called();
+      // Method to receive a generic message on the call pipe:
+      AMSPipe::Message receive();
 
-      void recv_hello(int64_t* version);
+      // Methods to extract the payload of the specific messages:
+
+      void extract_Hello(AMSPipe::Message& msg, int64_t& version) const;
+
+      void extract_SetSystem(AMSPipe::Message& msg,
+         std::vector<std::string>& atomSymbols,
+         std::vector<double>& coords,
+         std::vector<double>& latticeVectors,
+         double& totalCharge
+      ) const;
 
    private:
       std::ifstream pipe;
-
-      void verify_marker(char m);
-      int64_t read_int();
-      std::string read_string();
 
 };
 
@@ -53,6 +69,7 @@ class AMSReplyPipe {
 
    private:
       std::ofstream pipe;
+      void send(std::stringstream& buf);
 
 };
 
