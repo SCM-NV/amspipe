@@ -1,6 +1,32 @@
 #include "ubjson.hpp"
 
 
+// ===== Methods for converting between big endian (UBJSON) and native endian ====================================================
+
+// TODO: Will need some fixing on big endian platforms, where nothing needs to be done ...
+
+#ifdef _MSC_VER
+  #include <stdlib.h>
+  #define bswap_16(x) _byteswap_ushort(x)
+  #define bswap_32(x) _byteswap_ulong(x)
+  #define bswap_64(x) _byteswap_uint64(x)
+#else
+  #include <byteswap.h>  // bswap_16 bswap_32 bswap_64
+#endif
+
+inline double bswap_64f(double x) {
+   uint64_t i = *reinterpret_cast<uint64_t*>(&x);
+   i = bswap_64(i);
+   return *reinterpret_cast<double*>(&i);
+}
+
+inline float bswap_32f(float x) {
+   uint32_t i = *reinterpret_cast<uint32_t*>(&x);
+   i = bswap_32(i);
+   return *reinterpret_cast<float*>(&i);
+}
+
+
 // ===== Methods for reading UBJSON from a std::istream ==========================================================================
 
 
@@ -31,23 +57,23 @@ int64_t ubjson::read_int(std::istream& is) {
    if (marker == 'i') {
       int8_t i;
       is.read(reinterpret_cast<char*>(&i), sizeof(i));
-      return static_cast<int64_t>(i);
+      return i;
    } else if ('U') {
       uint8_t U;
       is.read(reinterpret_cast<char*>(&U), sizeof(U));
-      return static_cast<int64_t>(U);
+      return U;
    } else if ('I') {
       int16_t I;
       is.read(reinterpret_cast<char*>(&I), sizeof(I));
-      return static_cast<int64_t>(I);
+      return bswap_16(I);
    } else if ('l') {
       int32_t l;
       is.read(reinterpret_cast<char*>(&l), sizeof(l));
-      return static_cast<int64_t>(l);
+      return bswap_32(l);
    } else if ('L') {
       int64_t L;
       is.read(reinterpret_cast<char*>(&L), sizeof(L));
-      return L;
+      return bswap_64(L);
    } else {
       throw ubjson::Error("Unexpected integer type");
    }
@@ -60,11 +86,11 @@ double ubjson::read_real(std::istream& is) {
    if (marker == 'd') {
       float d;
       is.read(reinterpret_cast<char*>(&d), sizeof(d));
-      return static_cast<double>(d);
+      return bswap_32f(d);
    } else if ('D') {
       double D;
       is.read(reinterpret_cast<char*>(&D), sizeof(D));
-      return D;
+      return bswap_64f(D);
    } else {
       throw ubjson::Error("Unexpected real type");
    }
@@ -162,6 +188,7 @@ std::vector<double> ubjson::read_real_array(std::istream& is) {
       auto n = ubjson::read_int(is);
       std::vector<double> v(n);
       is.read(reinterpret_cast<char*>(v.data()), n*sizeof(v[0])); // TODO: support float32 here
+      for (double& D: v) D = bswap_64f(D);
       return v;
 
    } else if (m == '#') {
@@ -181,6 +208,53 @@ std::vector<double> ubjson::read_real_array(std::istream& is) {
 // ===== Methods for writing UBJSON to a std::ostream ============================================================================
 
 
+void ubjson::write_int(std::ostream& os, int8_t i) {
+   os << 'i';
+   os.write(reinterpret_cast<const char*>(&i), sizeof(i));
+}
+
+
+void ubjson::write_int(std::ostream& os, uint8_t U) {
+   os << 'U';
+   os.write(reinterpret_cast<const char*>(&U), sizeof(U));
+}
+
+
+void ubjson::write_int(std::ostream& os, int16_t I) {
+   os << 'I';
+   I = bswap_16(I);
+   os.write(reinterpret_cast<const char*>(&I), sizeof(I));
+}
+
+
+void ubjson::write_int(std::ostream& os, int32_t l) {
+   os << 'l';
+   l = bswap_32(l);
+   os.write(reinterpret_cast<const char*>(&l), sizeof(l));
+}
+
+
+void ubjson::write_int(std::ostream& os, int64_t L) {
+   os << 'L';
+   L = bswap_64(L);
+   os.write(reinterpret_cast<const char*>(&L), sizeof(L));
+}
+
+
+void ubjson::write_real(std::ostream& os, float d) {
+   os << 'd';
+   d = bswap_32f(d);
+   os.write(reinterpret_cast<const char*>(&d), sizeof(d));
+}
+
+
+void ubjson::write_real(std::ostream& os, double D) {
+   os << 'D';
+   D = bswap_64f(D);
+   os.write(reinterpret_cast<const char*>(&D), sizeof(D));
+}
+
+
 void ubjson::write_key(std::ostream& os, const std::string& key) {
    os << 'i';
    int8_t keylen = key.size();
@@ -190,15 +264,8 @@ void ubjson::write_key(std::ostream& os, const std::string& key) {
 
 
 void ubjson::write_string(std::ostream& os, const std::string& str) {
-   os << 'S' << 'l';
+   os << 'S';
    int32_t strlen = str.size();
-   os.write(reinterpret_cast<const char*>(&strlen), sizeof(strlen));
+   ubjson::write_int(os, strlen);
    os.write(&str[0], strlen);
 }
-
-
-void ubjson::write_int(std::ostream& os, int8_t i) {
-   os << 'i';
-   os.write(reinterpret_cast<const char*>(&i), sizeof(i));
-}
-

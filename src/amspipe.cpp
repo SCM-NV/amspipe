@@ -32,7 +32,7 @@ AMSPipe::Message AMSCallPipe::receive() {
    std::cout << "=====================" << std::endl;
    // DEBUG!!!
 
-   msg.payload.str(std::move(str));
+   msg.payload.str(std::move(str)); // std::move avoids copy starting with C++20
 
    // Message starts with { marker ...
    ubjson::verify_marker(msg.payload, '{');
@@ -97,6 +97,7 @@ void AMSCallPipe::extract_SetSystem(AMSPipe::Message& msg,
          latticeVectors_dim = ubjson::read_int_array(msg.payload);
 
       } else if (argument == "totalCharge") {
+         std::cerr << "Reading total charge" << std::endl;
          totalCharge = ubjson::read_real(msg.payload);
 
       } else {

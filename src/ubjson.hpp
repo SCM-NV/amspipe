@@ -30,6 +30,12 @@ namespace ubjson {
    // Methods for writing UBJSON to a std::ostream
 
    void write_int(std::ostream& os, int8_t i);
+   void write_int(std::ostream& os, uint8_t U);
+   void write_int(std::ostream& os, int16_t I);
+   void write_int(std::ostream& os, int32_t l);
+   void write_int(std::ostream& os, int64_t L);
+   void write_real(std::ostream& os, float d);
+   void write_real(std::ostream& os, double D);
    void write_key(std::ostream& os, const std::string& key); // like a string, but without preceding S marker
    void write_string(std::ostream& os, const std::string& str);
 

@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
 
          std::cout << "Received new system!" << std::endl;
          std::cout << "System" << std::endl;
-         std::cout << "   Atoms" << std::endl;
+         std::cout << "   Atoms [Bohr]" << std::endl;
          for (size_t iat = 0; iat < atomSymbols.size(); ++iat) {
             std::cout << "      " << atomSymbols[iat];
             for (int xyz = 0; xyz < 3; ++xyz)
@@ -52,9 +52,11 @@ int main(int argc, char* argv[]) {
             std::cout << std::endl;
          }
          std::cout << "   End" << std::endl;
-         std::cout << "   Charge " << totalCharge << std::endl;
+         if (totalCharge != 0.0) {
+            std::cout << "   Charge " << totalCharge << std::endl;
+         }
          if (!latticeVectors.empty()) {
-            std::cout << "   Lattice" << std::endl;
+            std::cout << "   Lattice [Bohr]" << std::endl;
             for (int ivec = 0; 3*ivec < latticeVectors.size(); ++ivec) {
                std::cout << "   ";
                for (int xyz = 0; xyz < 3; ++xyz)
