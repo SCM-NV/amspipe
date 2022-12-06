@@ -50,6 +50,18 @@ char ubjson::read_char(std::istream& is) {
 }
 
 
+bool ubjson::read_bool(std::istream& is) {
+   char b = read_char(is);
+   if (b == 'T') {
+      return true;
+   } else if (b == 'F') {
+      return false;
+   } else {
+      throw ubjson::Error("Unexpected marker for bool");
+   }
+}
+
+
 int64_t ubjson::read_int(std::istream& is) {
    // Extracts one integer from the stream
    char marker;

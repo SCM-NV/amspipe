@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
          int64_t version;
          call_pipe.extract_Hello(msg, version);
          std::cout << "version=" << version << std::endl;
-         reply_pipe.send_return( version == 1 ? AMSReplyPipe::Status::success : AMSReplyPipe::Status::unknown_version);
+         reply_pipe.send_return( version == 1 ? AMSPipe::Status::success : AMSPipe::Status::unknown_version);
 
       } else if (msg.name == "Exit") {
          break;
@@ -68,6 +68,14 @@ int main(int argc, char* argv[]) {
          std::cout << "End" << std::endl;
 
       } else if (msg.name == "Solve") {
+
+         AMSPipe::SolveRequest request;
+         bool keepResults;
+         std::string prevTitle;
+
+         call_pipe.extract_Solve(msg, request, keepResults, prevTitle);
+
+         std::cout << "Title = " << request.title << std::endl;
 
       } else {
          throw AMSPipe::Error("Unknown method called!");

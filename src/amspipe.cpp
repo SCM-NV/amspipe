@@ -128,6 +128,73 @@ void AMSCallPipe::extract_SetSystem(AMSPipe::Message& msg,
 }
 
 
+void AMSCallPipe::extract_Solve(AMSPipe::Message& msg,
+   AMSPipe::SolveRequest& request,
+   bool& keepResults,
+   std::string& prevTitle
+) const {
+   if (msg.name != "Solve") {
+      throw AMSPipe::Error("AMSCallPipe::extract_Solve called on wrong message");
+   }
+
+   while (ubjson::peek(msg.payload) != '}') {
+      auto argument = ubjson::read_key(msg.payload);
+
+      if (argument == "request") {
+         ubjson::verify_marker(msg.payload, '{');
+         while (ubjson::peek(msg.payload) != '}') {
+            auto field = ubjson::read_key(msg.payload);
+            if (field == "title") {
+               request.title = ubjson::read_string(msg.payload);
+            } else if (field == "other") {
+               // silently ignore "other" for now
+               ubjson::read_bool(msg.payload);
+            } else if (field == "quiet") {
+               request.quiet = ubjson::read_bool(msg.payload);
+            } else if (field == "gradients") {
+               request.gradients = ubjson::read_bool(msg.payload);
+            } else if (field == "stressTensor") {
+               request.stressTensor = ubjson::read_bool(msg.payload);
+            } else if (field == "elasticTensor") {
+               request.elasticTensor = ubjson::read_bool(msg.payload);
+            } else if (field == "hessian") {
+               request.hessian = ubjson::read_bool(msg.payload);
+            } else if (field == "dipoleMoment") {
+               request.dipoleMoment = ubjson::read_bool(msg.payload);
+            } else if (field == "dipoleGradients") {
+               request.dipoleGradients = ubjson::read_bool(msg.payload);
+            } else {
+               if (ubjson::peek(msg.payload) == 'F') {
+                  // The worker MAY raise an unknown argument error if an unknown Boolean is set to False ...
+                  // ... but we just extract and ignore it ;-) ...
+                  ubjson::read_bool(msg.payload);
+               } else {
+                  throw AMSPipe::Error("unknown_argument");
+               }
+            }
+         }
+         ubjson::verify_marker(msg.payload, '}');
+
+         if (request.title.empty()) {
+            throw AMSPipe::Error("invalid_argument: title may not be empty");
+         }
+
+      } else if (argument == "keepResults") {
+         keepResults = ubjson::read_bool(msg.payload);
+
+      } else if (argument == "prevTitle") {
+         prevTitle = ubjson::read_string(msg.payload);
+
+      } else {
+         throw AMSPipe::Error("unknown_argument");
+      }
+
+   }
+   ubjson::verify_marker(msg.payload, '}');
+
+}
+
+
 // ===== AMSReplyPipe ============================================================================================================
 
 AMSReplyPipe::AMSReplyPipe(const std::string& filename) {
@@ -136,7 +203,7 @@ AMSReplyPipe::AMSReplyPipe(const std::string& filename) {
 }
 
 
-void AMSReplyPipe::send_return(Status status, const std::string& method, const std::string& argument, const std::string& message) {
+void AMSReplyPipe::send_return(AMSPipe::Status status, const std::string& method, const std::string& argument, const std::string& message) {
    std::stringstream buf;
 
    buf << '{';

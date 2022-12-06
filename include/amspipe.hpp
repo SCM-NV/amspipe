@@ -11,9 +11,31 @@ namespace AMSPipe {
 
    class Error : public std::runtime_error { using std::runtime_error::runtime_error; };
 
+   enum class Status : int8_t {
+      success          = 0,
+      decode_error     = 1,
+      logic_error      = 2,
+      runtime_error    = 3,
+      unknown_version  = 4,
+      unknown_method   = 5,
+      unknown_argument = 6,
+      invalid_argument = 7
+   };
+
    struct Message {
       std::string name;
       std::stringstream payload;
+   };
+
+   struct SolveRequest {
+      std::string title;
+      bool quiet = false;
+      bool gradients = false;
+      bool stressTensor = false;
+      bool elasticTensor = false;
+      bool hessian = false;
+      bool dipoleMoment = false;
+      bool dipoleGradients = false;
    };
 
 };
@@ -39,6 +61,12 @@ class AMSCallPipe {
          double& totalCharge
       ) const;
 
+      void extract_Solve(AMSPipe::Message& msg,
+         AMSPipe::SolveRequest& request,
+         bool& keepResults,
+         std::string& prevTitle
+      ) const;
+
    private:
       std::ifstream pipe;
 
@@ -49,19 +77,8 @@ class AMSReplyPipe {
 
    public:
       AMSReplyPipe(const std::string& filename="reply_pipe");
-
-      enum class Status : int8_t {
-         success          = 0,
-         decode_error     = 1,
-         logic_error      = 2,
-         runtime_error    = 3,
-         unknown_version  = 4,
-         unknown_method   = 5,
-         unknown_argument = 6,
-         invalid_argument = 7
-      };
       void send_return(
-         Status status,
+         AMSPipe::Status status,
          const std::string& method="",
          const std::string& argument="",
          const std::string& message=""
