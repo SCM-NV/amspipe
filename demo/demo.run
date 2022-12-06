@@ -1,0 +1,24 @@
+#!/bin/sh
+
+NSCM=1 $AMSBIN/ams --delete-old-results << EOF
+
+Task SinglePoint
+
+System
+   Atoms
+      O       0.00000000       0.00000000       0.59372000
+      H       0.00000000       0.76544000      -0.00836000
+      H       0.00000000      -0.76544000      -0.00836000
+   End
+   Lattice
+      100   0   0
+        0 100   0
+        0   0 100
+   End
+End
+
+Engine Pipe
+   WorkerCommand $(pwd)/../build/demo
+EndEngine
+
+EOF
