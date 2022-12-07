@@ -2,7 +2,11 @@
 
 NSCM=1 $AMSBIN/ams --delete-old-results << EOF
 
-Task SinglePoint
+Task GeometryOptimization
+
+Properties
+   Gradients True
+End
 
 System
    Atoms

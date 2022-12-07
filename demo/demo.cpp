@@ -42,7 +42,11 @@ int main(int argc, char* argv[]) {
 
       } else if (msg.name == "SetCoords") {
 
+         call_pipe.extract_SetCoords(msg, coords.data());
+
       } else if (msg.name == "SetLattice") {
+
+         call_pipe.extract_SetLattice(msg, latticeVectors);
 
       } else if (msg.name == "SetSystem") {
 
@@ -91,12 +95,19 @@ int main(int argc, char* argv[]) {
          if (!prevTitle.empty() && keptResults.find(prevTitle) == keptResults.end()) {
             throw AMSPipe::Error("logic_error: prevTitle does not correspond to a kept results object");
          }
+         if (keepResults) keptResults.insert(request.title);
 
          // TODO: actual computation here ...
          AMSPipe::Results results;
          results.energy = 13.7;
 
-         if (keepResults) keptResults.insert(request.title);
+         std::vector<double> grads;
+         if (request.gradients) {
+            grads.resize(coords.size(), 0.0);
+            results.gradients = grads.data();
+            results.gradients_dim[0] = 3;
+            results.gradients_dim[1] = grads.size()/3;
+         }
 
          reply_pipe.send_results(results);
          reply_pipe.send_return(AMSPipe::Status::success); // we are so simple that we never fail ...

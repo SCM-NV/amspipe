@@ -44,17 +44,17 @@ namespace AMSPipe {
       std::vector<std::string> messages;
       double energy;
       double* gradients = nullptr;
-      size_t gradients_dim[2];
+      int32_t gradients_dim[2];
       double* stressTensor = nullptr;
-      size_t stressTensor_dim[2];
+      int32_t stressTensor_dim[2];
       double* elasticTensor = nullptr;
-      size_t elasticTensor_dim[2];
+      int32_t elasticTensor_dim[2];
       double* hessian = nullptr;
-      size_t hessian_dim[2];
+      int32_t hessian_dim[2];
       double* dipoleMoment = nullptr;
-      size_t dipoleMoment_dim[2];
+      int32_t dipoleMoment_dim[2];
       double* dipoleGradients = nullptr;
-      size_t dipoleGradients_dim[2];
+      int32_t dipoleGradients_dim[2];
    };
 };
 
@@ -78,6 +78,10 @@ class AMSCallPipe {
          std::vector<double>& latticeVectors,
          double& totalCharge
       ) const;
+
+      void extract_SetCoords(AMSPipe::Message& msg, double* coords) const;
+
+      void extract_SetLattice(AMSPipe::Message& msg, std::vector<double>& latticeVectors) const;
 
       void extract_Solve(AMSPipe::Message& msg,
          AMSPipe::SolveRequest& request,

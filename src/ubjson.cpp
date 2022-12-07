@@ -246,11 +246,11 @@ void ubjson::write_int(std::ostream& os, int32_t l) {
 }
 
 
-void ubjson::write_int(std::ostream& os, int64_t L) {
-   os << 'L';
-   L = bswap_64(L);
-   os.write(reinterpret_cast<const char*>(&L), sizeof(L));
-}
+//void ubjson::write_int(std::ostream& os, int64_t L) {
+//   os << 'L';
+//   L = bswap_64(L);
+//   os.write(reinterpret_cast<const char*>(&L), sizeof(L));
+//}
 
 
 void ubjson::write_real(std::ostream& os, float d) {
@@ -280,4 +280,14 @@ void ubjson::write_string(std::ostream& os, const std::string& str) {
    int32_t strlen = str.size();
    ubjson::write_int(os, strlen);
    os.write(&str[0], strlen);
+}
+
+
+void ubjson::write_real_array(std::ostream& os, const double* arr, int32_t n) {
+   os << '[' << '$' << 'D' << '#';
+   ubjson::write_int(os, n);
+   for (int32_t i=0; i < n; ++i) {
+      double D = bswap_64f(arr[i]);
+      os.write(reinterpret_cast<const char*>(&D), sizeof(D));
+   }
 }

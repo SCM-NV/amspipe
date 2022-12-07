@@ -40,9 +40,9 @@ AMSPipe::Message AMSCallPipe::receive() {
    pipe.read(&str[0], msgsize);
 
    // DEBUG!!!
-   std::cout << "=====================" << std::endl;
+   std::cout << "==CALL=================" << std::endl;
    for (char c: str) std::cout << int(c) << " " << c << std::endl;
-   std::cout << "=====================" << std::endl;
+   std::cout << "=======================" << std::endl;
    // DEBUG!!!
 
    msg.payload.str(std::move(str)); // std::move here avoids copy starting with C++20
@@ -89,9 +89,9 @@ void AMSCallPipe::extract_SetSystem(AMSPipe::Message& msg,
    latticeVectors.clear();
    totalCharge = 0.0;
 
-   std::vector<int64_t> atomSymbols_dim;
-   std::vector<int64_t> coords_dim;
-   std::vector<int64_t> latticeVectors_dim;
+   std::vector<int64_t> atomSymbols_dim = {-1};
+   std::vector<int64_t> coords_dim = {-1,-1};
+   std::vector<int64_t> latticeVectors_dim = {-1,-1};
 
    while (ubjson::peek(msg.payload) != '}'){
       auto argument = ubjson::read_key(msg.payload);
@@ -137,6 +137,72 @@ void AMSCallPipe::extract_SetSystem(AMSPipe::Message& msg,
    if (coords_dim.size() != 2 || coords_dim[0] != 3 || coords_dim[1] != atomSymbols.size()) {
       throw AMSPipe::Error("Size of coords is inconsistent with coords_dim_ in SetSystem message");
    }
+   if (latticeVectors_dim.size() != 2 || latticeVectors_dim[0] * latticeVectors_dim[1] != latticeVectors.size()) {
+      throw AMSPipe::Error("Size of latticeVectors is inconsistent with latticeVectors_dim_ in SetSystem message");
+   }
+   if (latticeVectors.size() != 0 && latticeVectors.size() != 3 && latticeVectors.size() != 6 && latticeVectors.size() != 9) {
+      throw AMSPipe::Error("Unexpected size of latticeVectors in SetSystem message");
+   }
+}
+
+
+void AMSCallPipe::extract_SetCoords(AMSPipe::Message& msg, double* coords) const {
+   if (msg.name != "SetCoords") {
+      throw AMSPipe::Error("AMSCallPipe::extract_SetCoords called on wrong message");
+   }
+
+   std::vector<double> newcoords; // TODO: remove and write directly to coords
+   std::vector<int64_t> coords_dim = {-1,-1};
+
+   while (ubjson::peek(msg.payload) != '}') {
+      auto argument = ubjson::read_key(msg.payload);
+
+      if (argument == "coords") {
+         newcoords = ubjson::read_real_array(msg.payload);
+
+      } else if (argument == "coords_dim_") {
+         coords_dim = ubjson::read_int_array(msg.payload);
+
+      } else {
+         throw AMSPipe::Error("unknown_argument");
+      }
+   }
+   ubjson::verify_marker(msg.payload, '}');
+
+   // Checks on the completeness and consistency of the transferred data
+   if (coords_dim.size() != 2 || coords_dim[0] * coords_dim[1] != newcoords.size()) {
+      throw AMSPipe::Error("Size of coords is inconsistent with coords_dim_ in SetSystem message");
+   }
+
+   for (size_t i = 0; i < newcoords.size(); ++i) coords[i] = newcoords[i]; // TODO: remove and write directly to coords
+}
+
+
+void AMSCallPipe::extract_SetLattice(AMSPipe::Message& msg, std::vector<double>& latticeVectors) const {
+   if (msg.name != "SetLattice") {
+      throw AMSPipe::Error("AMSCallPipe::extract_SetLattice called on wrong message");
+   }
+
+   latticeVectors.clear();
+
+   std::vector<int64_t> latticeVectors_dim = {-1,-1};
+
+   while (ubjson::peek(msg.payload) != '}'){
+      auto argument = ubjson::read_key(msg.payload);
+
+      if (argument == "vectors") {
+         latticeVectors = ubjson::read_real_array(msg.payload);
+
+      } else if (argument == "vectors_dim_") {
+         latticeVectors_dim = ubjson::read_int_array(msg.payload);
+
+      } else {
+         throw AMSPipe::Error("unknown_argument");
+      }
+   }
+   ubjson::verify_marker(msg.payload, '}');
+
+   // Checks on the completeness and consistency of the transferred data
    if (latticeVectors_dim.size() != 2 || latticeVectors_dim[0] * latticeVectors_dim[1] != latticeVectors.size()) {
       throw AMSPipe::Error("Size of latticeVectors is inconsistent with latticeVectors_dim_ in SetSystem message");
    }
@@ -273,7 +339,17 @@ void AMSReplyPipe::send_results(const AMSPipe::Results& results) {
    ubjson::write_key(buf, "energy");
    ubjson::write_real(buf, results.energy);
 
-   // TODO: write all optional results ...
+   if (results.gradients) {
+      ubjson::write_key(buf, "gradients");
+      ubjson::write_real_array(buf, results.gradients, results.gradients_dim[0]*results.gradients_dim[1]);
+      ubjson::write_key(buf, "gradients_dim_");
+      buf << '[';
+      ubjson::write_int(buf, results.gradients_dim[0]);
+      ubjson::write_int(buf, results.gradients_dim[1]);
+      buf << ']';
+   }
+
+   // TODO: write other optional results ...
 
    buf << '}' << '}';
 
@@ -283,6 +359,13 @@ void AMSReplyPipe::send_results(const AMSPipe::Results& results) {
 
 void AMSReplyPipe::send(std::stringstream& buf) {
    auto tmp = buf.str();
+
+   // DEBUG
+   std::cout << "==REPLY================" << std::endl;
+   for (char c: tmp) std::cout << int(c) << " " << c << std::endl;
+   std::cout << "=======================" << std::endl;
+   // DEBUG
+
    int32_t msgsize = tmp.size();
    pipe.write(reinterpret_cast<const char*>(&msgsize), sizeof(msgsize));
    pipe.write(&tmp[0], tmp.size());
