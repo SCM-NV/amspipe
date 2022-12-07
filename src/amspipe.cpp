@@ -8,13 +8,13 @@
 
 
 std::ostream& AMSPipe::operator<<(std::ostream& os, const AMSPipe::SolveRequest& request) {
-   std::cout << "   title: " << request.title << std::endl;
-   std::cout << "   gradients: " << request.gradients << std::endl;
-   std::cout << "   stressTensor: " << request.stressTensor  << std::endl;
-   std::cout << "   elasticTensor: " << request.elasticTensor  << std::endl;
-   std::cout << "   hessian: " << request.hessian  << std::endl;
-   std::cout << "   dipoleMoment: " << request.dipoleMoment  << std::endl;
-   std::cout << "   dipoleGradients: " << request.dipoleGradients  << std::endl;
+   os << "   title: " << request.title << std::endl;
+   os << "   gradients: " << request.gradients << std::endl;
+   os << "   stressTensor: " << request.stressTensor  << std::endl;
+   os << "   elasticTensor: " << request.elasticTensor  << std::endl;
+   os << "   hessian: " << request.hessian  << std::endl;
+   os << "   dipoleMoment: " << request.dipoleMoment  << std::endl;
+   os << "   dipoleGradients: " << request.dipoleGradients  << std::endl;
    return os;
 }
 
@@ -40,9 +40,9 @@ AMSPipe::Message AMSCallPipe::receive() {
    pipe.read(&str[0], msgsize);
 
    // DEBUG!!!
-   std::cout << "==CALL=================" << std::endl;
-   for (char c: str) std::cout << int(c) << " " << c << std::endl;
-   std::cout << "=======================" << std::endl;
+   //std::cout << "==CALL=================" << std::endl;
+   //for (char c: str) std::cout << int(c) << " " << c << std::endl;
+   //std::cout << "=======================" << std::endl;
    // DEBUG!!!
 
    msg.payload.str(std::move(str)); // std::move here avoids copy starting with C++20
@@ -361,9 +361,9 @@ void AMSReplyPipe::send(std::stringstream& buf) {
    auto tmp = buf.str();
 
    // DEBUG
-   std::cout << "==REPLY================" << std::endl;
-   for (char c: tmp) std::cout << int(c) << " " << c << std::endl;
-   std::cout << "=======================" << std::endl;
+   //std::cout << "==REPLY================" << std::endl;
+   //for (char c: tmp) std::cout << int(c) << " " << c << std::endl;
+   //std::cout << "=======================" << std::endl;
    // DEBUG
 
    int32_t msgsize = tmp.size();
