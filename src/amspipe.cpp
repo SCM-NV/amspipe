@@ -6,6 +6,19 @@
 #include "ubjson.hpp"
 
 
+
+std::ostream& AMSPipe::operator<<(std::ostream& os, const AMSPipe::SolveRequest& request) {
+   std::cout << "   title: " << request.title << std::endl;
+   std::cout << "   gradients: " << request.gradients << std::endl;
+   std::cout << "   stressTensor: " << request.stressTensor  << std::endl;
+   std::cout << "   elasticTensor: " << request.elasticTensor  << std::endl;
+   std::cout << "   hessian: " << request.hessian  << std::endl;
+   std::cout << "   dipoleMoment: " << request.dipoleMoment  << std::endl;
+   std::cout << "   dipoleGradients: " << request.dipoleGradients  << std::endl;
+   return os;
+}
+
+
 // ===== AMSCallPipe =============================================================================================================
 
 AMSCallPipe::AMSCallPipe(const std::string& filename) {
@@ -32,7 +45,7 @@ AMSPipe::Message AMSCallPipe::receive() {
    std::cout << "=====================" << std::endl;
    // DEBUG!!!
 
-   msg.payload.str(std::move(str)); // std::move avoids copy starting with C++20
+   msg.payload.str(std::move(str)); // std::move here avoids copy starting with C++20
 
    // Message starts with { marker ...
    ubjson::verify_marker(msg.payload, '{');
@@ -70,6 +83,11 @@ void AMSCallPipe::extract_SetSystem(AMSPipe::Message& msg,
    if (msg.name != "SetSystem") {
       throw AMSPipe::Error("AMSCallPipe::extract_SetSystem called on wrong message");
    }
+
+   atomSymbols.clear();
+   coords.clear();
+   latticeVectors.clear();
+   totalCharge = 0.0;
 
    std::vector<int64_t> atomSymbols_dim;
    std::vector<int64_t> coords_dim;
@@ -195,6 +213,21 @@ void AMSCallPipe::extract_Solve(AMSPipe::Message& msg,
 }
 
 
+void AMSCallPipe::extract_DeleteResults(AMSPipe::Message& msg, std::string& title) const {
+   if (msg.name != "DeleteResults") {
+      throw AMSPipe::Error("AMSCallPipe::extract_DeleteResults called on wrong message");
+   }
+
+   auto argument = ubjson::read_key(msg.payload);
+   if (argument == "title") {
+      title = ubjson::read_string(msg.payload);
+   } else {
+      throw AMSPipe::Error("unknown_argument");
+   }
+   ubjson::verify_marker(msg.payload, '}');
+}
+
+
 // ===== AMSReplyPipe ============================================================================================================
 
 AMSReplyPipe::AMSReplyPipe(const std::string& filename) {
@@ -223,6 +256,25 @@ void AMSReplyPipe::send_return(AMSPipe::Status status, const std::string& method
       ubjson::write_key(buf, "argument");
       ubjson::write_string(buf, argument);
    }
+   buf << '}' << '}';
+
+   send(buf);
+}
+
+
+void AMSReplyPipe::send_results(const AMSPipe::Results& results) {
+   std::stringstream buf;
+
+   buf << '{';
+   ubjson::write_key(buf, "results");
+   buf << '{';
+
+   // the energy is the only result we *always* produce
+   ubjson::write_key(buf, "energy");
+   ubjson::write_real(buf, results.energy);
+
+   // TODO: write all optional results ...
+
    buf << '}' << '}';
 
    send(buf);

@@ -5,6 +5,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <span>
 
 
 namespace AMSPipe {
@@ -37,7 +38,24 @@ namespace AMSPipe {
       bool dipoleMoment = false;
       bool dipoleGradients = false;
    };
+   std::ostream& operator<<(std::ostream& os, const AMSPipe::SolveRequest& request);
 
+   struct Results {
+      std::vector<std::string> messages;
+      double energy;
+      double* gradients = nullptr;
+      size_t gradients_dim[2];
+      double* stressTensor = nullptr;
+      size_t stressTensor_dim[2];
+      double* elasticTensor = nullptr;
+      size_t elasticTensor_dim[2];
+      double* hessian = nullptr;
+      size_t hessian_dim[2];
+      double* dipoleMoment = nullptr;
+      size_t dipoleMoment_dim[2];
+      double* dipoleGradients = nullptr;
+      size_t dipoleGradients_dim[2];
+   };
 };
 
 
@@ -67,6 +85,8 @@ class AMSCallPipe {
          std::string& prevTitle
       ) const;
 
+      void extract_DeleteResults(AMSPipe::Message& msg, std::string& title) const;
+
    private:
       std::ifstream pipe;
 
@@ -76,13 +96,19 @@ class AMSCallPipe {
 class AMSReplyPipe {
 
    public:
+
       AMSReplyPipe(const std::string& filename="reply_pipe");
+
+      // Methods to send specific messages:
+
       void send_return(
          AMSPipe::Status status,
          const std::string& method="",
          const std::string& argument="",
          const std::string& message=""
       );
+
+      void send_results(const AMSPipe::Results& results);
 
    private:
       std::ofstream pipe;

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <set>
 
 #include "amspipe.hpp"
 
@@ -11,6 +12,16 @@ int main(int argc, char* argv[]) {
 
    AMSCallPipe   call_pipe;
    AMSReplyPipe reply_pipe;
+
+   // Variables holding our current system:
+   std::vector<std::string> atomSymbols;
+   std::vector<double>      coords;
+   std::vector<double>      latticeVectors;
+   double                   totalCharge;
+
+   // Cache of results we have kept:
+   std::set<std::string> keptResults;
+   // (For this demo we just keep their titles and no actual data ...)
 
    std::cout << "after opening pipes" << std::endl;
 
@@ -34,11 +45,6 @@ int main(int argc, char* argv[]) {
       } else if (msg.name == "SetLattice") {
 
       } else if (msg.name == "SetSystem") {
-
-         std::vector<std::string> atomSymbols;
-         std::vector<double>      coords;
-         std::vector<double>      latticeVectors;
-         double                   totalCharge;
 
          call_pipe.extract_SetSystem(msg, atomSymbols, coords, latticeVectors, totalCharge);
 
@@ -75,7 +81,35 @@ int main(int argc, char* argv[]) {
 
          call_pipe.extract_Solve(msg, request, keepResults, prevTitle);
 
-         std::cout << "Title = " << request.title << std::endl;
+         std::cout << "Request:" << std::endl << request;
+         std::cout << "keepResults: " << keepResults << std::endl;
+         if (!prevTitle.empty()) std::cout << "prevTitle: " << prevTitle << std::endl;
+
+         if (keptResults.find(request.title) != keptResults.end()) {
+            throw AMSPipe::Error("logic_error: title in request corresponds to an already stored results object");
+         }
+         if (!prevTitle.empty() && keptResults.find(prevTitle) == keptResults.end()) {
+            throw AMSPipe::Error("logic_error: prevTitle does not correspond to a kept results object");
+         }
+
+         // TODO: actual computation here ...
+         AMSPipe::Results results;
+         results.energy = 13.7;
+
+         if (keepResults) keptResults.insert(request.title);
+
+         reply_pipe.send_results(results);
+         reply_pipe.send_return(AMSPipe::Status::success); // we are so simple that we never fail ...
+
+      } else if (msg.name == "DeleteResults") {
+
+         std::string title;
+         call_pipe.extract_DeleteResults(msg, title);
+         std::cout << "DeleteResults title: " << title << std::endl;
+         if (keptResults.erase(title) == 0) {
+            throw AMSPipe::Error("logic_error: DeleteResults called with title that was never stored");
+         }
+         reply_pipe.send_return(AMSPipe::Status::success); // we are so simple that we never fail ...
 
       } else {
          throw AMSPipe::Error("Unknown method called!");
