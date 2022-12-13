@@ -10,8 +10,6 @@
 
 namespace AMSPipe {
 
-   class Error : public std::runtime_error { using std::runtime_error::runtime_error; };
-
    enum class Status : int8_t {
       success          = 0,
       decode_error     = 1,
@@ -21,6 +19,16 @@ namespace AMSPipe {
       unknown_method   = 5,
       unknown_argument = 6,
       invalid_argument = 7
+   };
+
+   class Error : public std::runtime_error {
+      public:
+         Status      status;
+         std::string method;
+         std::string argument;
+         // as the "message" we just use the .what() of the base exception
+
+         Error(Status status, const std::string& method, const std::string& argument, const std::string& message);
    };
 
    struct Message {
@@ -81,7 +89,7 @@ class AMSCallPipe {
 
       void extract_SetCoords(AMSPipe::Message& msg, double* coords) const;
 
-      void extract_SetLattice(AMSPipe::Message& msg, std::vector<double>& latticeVectors) const;
+      void extract_SetLattice(AMSPipe::Message& msg, std::vector<double>& vectors) const;
 
       void extract_Solve(AMSPipe::Message& msg,
          AMSPipe::SolveRequest& request,

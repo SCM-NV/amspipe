@@ -7,6 +7,13 @@
 
 
 
+AMSPipe::Error::Error(Status status, const std::string& method, const std::string& argument, const std::string& message)
+:  std::runtime_error(message),
+   method(method),
+   argument(argument)
+{}
+
+
 std::ostream& AMSPipe::operator<<(std::ostream& os, const AMSPipe::SolveRequest& request) {
    os << "   title: " << request.title << std::endl;
    os << "   gradients: " << request.gradients << std::endl;
@@ -61,14 +68,16 @@ AMSPipe::Message AMSCallPipe::receive() {
 
 void AMSCallPipe::extract_Hello(AMSPipe::Message& msg, int64_t& version) const {
    if (msg.name != "Hello") {
-      throw AMSPipe::Error("AMSCallPipe::extract_Hello called on wrong message");
+      throw AMSPipe::Error(AMSPipe::Status::logic_error, "Hello", "",
+                           "Hello called on message with name: "+msg.name);
    }
 
    auto argument = ubjson::read_key(msg.payload);
    if (argument == "version") {
       version = ubjson::read_int(msg.payload);
    } else {
-      throw AMSPipe::Error("unknown_argument");
+      throw AMSPipe::Error(AMSPipe::Status::unknown_argument, "Hello", argument,
+                           "unknown argument "+argument+" in Hello message");
    }
    ubjson::verify_marker(msg.payload, '}');
 }
@@ -81,7 +90,8 @@ void AMSCallPipe::extract_SetSystem(AMSPipe::Message& msg,
    double& totalCharge
 ) const {
    if (msg.name != "SetSystem") {
-      throw AMSPipe::Error("AMSCallPipe::extract_SetSystem called on wrong message");
+      throw AMSPipe::Error(AMSPipe::Status::logic_error, "SetSystem", "",
+                           "SetSystem called on message with name: "+msg.name);
    }
 
    atomSymbols.clear();
@@ -115,40 +125,46 @@ void AMSCallPipe::extract_SetSystem(AMSPipe::Message& msg,
          latticeVectors_dim = ubjson::read_int_array(msg.payload);
 
       } else if (argument == "totalCharge") {
-         std::cerr << "Reading total charge" << std::endl;
          totalCharge = ubjson::read_real(msg.payload);
 
       } else {
-         throw AMSPipe::Error("unknown_argument");
+         throw AMSPipe::Error(AMSPipe::Status::unknown_argument, "SetSystem", argument,
+                              "unknown argument "+argument+" in SetSystem message");
       }
    }
    ubjson::verify_marker(msg.payload, '}');
 
    // Checks on the completeness and consistency of the transferred data
    if (atomSymbols.empty()) {
-      throw AMSPipe::Error("No atoms in SetSystem message");
+      throw AMSPipe::Error(AMSPipe::Status::logic_error, "SetSystem", "atomSymbols", "No atoms in SetSystem message");
    }
    if (atomSymbols_dim.size() != 1 || atomSymbols_dim[0] != atomSymbols.size()) {
-      throw AMSPipe::Error("Size of atomSymbols is inconsistent with atomSymbols_dim_ in SetSystem message");
+      throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetSystem", "atomSymbols",
+                           "Size of atomSymbols is inconsistent with atomSymbols_dim_ in SetSystem message");
    }
    if (coords.size() != 3*atomSymbols.size()) {
-      throw AMSPipe::Error("Sizes of atomSymbols and coords inconsistent in SetSystem message");
+      throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetSystem", "coords",
+                           "Sizes of atomSymbols and coords inconsistent in SetSystem message");
    }
    if (coords_dim.size() != 2 || coords_dim[0] != 3 || coords_dim[1] != atomSymbols.size()) {
-      throw AMSPipe::Error("Size of coords is inconsistent with coords_dim_ in SetSystem message");
+      throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetSystem", "coords",
+                           "Size of coords is inconsistent with coords_dim_ in SetSystem message");
    }
    if (latticeVectors_dim.size() != 2 || latticeVectors_dim[0] * latticeVectors_dim[1] != latticeVectors.size()) {
-      throw AMSPipe::Error("Size of latticeVectors is inconsistent with latticeVectors_dim_ in SetSystem message");
+      throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetSystem", "latticeVectors",
+                           "Size of latticeVectors is inconsistent with latticeVectors_dim_ in SetSystem message");
    }
    if (latticeVectors.size() != 0 && latticeVectors.size() != 3 && latticeVectors.size() != 6 && latticeVectors.size() != 9) {
-      throw AMSPipe::Error("Unexpected size of latticeVectors in SetSystem message");
+      throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetSystem", "latticeVectors",
+                           "Unexpected size of latticeVectors in SetSystem message");
    }
 }
 
 
 void AMSCallPipe::extract_SetCoords(AMSPipe::Message& msg, double* coords) const {
    if (msg.name != "SetCoords") {
-      throw AMSPipe::Error("AMSCallPipe::extract_SetCoords called on wrong message");
+      throw AMSPipe::Error(AMSPipe::Status::logic_error, "SetCoords", "",
+                           "SetCoords called on message with name: "+msg.name);
    }
 
    std::vector<double> newcoords; // TODO: remove and write directly to coords
@@ -164,50 +180,56 @@ void AMSCallPipe::extract_SetCoords(AMSPipe::Message& msg, double* coords) const
          coords_dim = ubjson::read_int_array(msg.payload);
 
       } else {
-         throw AMSPipe::Error("unknown_argument");
+         throw AMSPipe::Error(AMSPipe::Status::unknown_argument, "SetCoords", argument,
+                              "unknown argument "+argument+" in SetCoords message");
       }
    }
    ubjson::verify_marker(msg.payload, '}');
 
    // Checks on the completeness and consistency of the transferred data
    if (coords_dim.size() != 2 || coords_dim[0] * coords_dim[1] != newcoords.size()) {
-      throw AMSPipe::Error("Size of coords is inconsistent with coords_dim_ in SetSystem message");
+      throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetCoords", "coords",
+                           "Size of coords is inconsistent with coords_dim_ in SetCoords message");
    }
 
    for (size_t i = 0; i < newcoords.size(); ++i) coords[i] = newcoords[i]; // TODO: remove and write directly to coords
 }
 
 
-void AMSCallPipe::extract_SetLattice(AMSPipe::Message& msg, std::vector<double>& latticeVectors) const {
+void AMSCallPipe::extract_SetLattice(AMSPipe::Message& msg, std::vector<double>& vectors) const {
    if (msg.name != "SetLattice") {
-      throw AMSPipe::Error("AMSCallPipe::extract_SetLattice called on wrong message");
+      throw AMSPipe::Error(AMSPipe::Status::logic_error, "SetLattice", "",
+                           "SetLattice called on message with name: "+msg.name);
    }
 
-   latticeVectors.clear();
+   vectors.clear();
 
-   std::vector<int64_t> latticeVectors_dim = {-1,-1};
+   std::vector<int64_t> vectors_dim = {-1,-1};
 
    while (ubjson::peek(msg.payload) != '}'){
       auto argument = ubjson::read_key(msg.payload);
 
       if (argument == "vectors") {
-         latticeVectors = ubjson::read_real_array(msg.payload);
+         vectors = ubjson::read_real_array(msg.payload);
 
       } else if (argument == "vectors_dim_") {
-         latticeVectors_dim = ubjson::read_int_array(msg.payload);
+         vectors_dim = ubjson::read_int_array(msg.payload);
 
       } else {
-         throw AMSPipe::Error("unknown_argument");
+         throw AMSPipe::Error(AMSPipe::Status::unknown_argument, "SetLattice", argument,
+                              "unknown argument "+argument+" in SetLattice message");
       }
    }
    ubjson::verify_marker(msg.payload, '}');
 
    // Checks on the completeness and consistency of the transferred data
-   if (latticeVectors_dim.size() != 2 || latticeVectors_dim[0] * latticeVectors_dim[1] != latticeVectors.size()) {
-      throw AMSPipe::Error("Size of latticeVectors is inconsistent with latticeVectors_dim_ in SetSystem message");
+   if (vectors_dim.size() != 2 || vectors_dim[0] * vectors_dim[1] != vectors.size()) {
+      throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetLattice", "vectors",
+                           "Size of vectors is inconsistent with vectors_dim_ in SetLattice message");
    }
-   if (latticeVectors.size() != 0 && latticeVectors.size() != 3 && latticeVectors.size() != 6 && latticeVectors.size() != 9) {
-      throw AMSPipe::Error("Unexpected size of latticeVectors in SetSystem message");
+   if (vectors.size() != 0 && vectors.size() != 3 && vectors.size() != 6 && vectors.size() != 9) {
+      throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetLattice", "vectors",
+                           "Unexpected size of vectors in SetLattice message");
    }
 }
 
@@ -218,7 +240,8 @@ void AMSCallPipe::extract_Solve(AMSPipe::Message& msg,
    std::string& prevTitle
 ) const {
    if (msg.name != "Solve") {
-      throw AMSPipe::Error("AMSCallPipe::extract_Solve called on wrong message");
+      throw AMSPipe::Error(AMSPipe::Status::logic_error, "Solve", "",
+                           "Solve called on message with name: "+msg.name);
    }
 
    while (ubjson::peek(msg.payload) != '}') {
@@ -253,14 +276,16 @@ void AMSCallPipe::extract_Solve(AMSPipe::Message& msg,
                   // ... but we just extract and ignore it ;-) ...
                   ubjson::read_bool(msg.payload);
                } else {
-                  throw AMSPipe::Error("unknown_argument");
+                  throw AMSPipe::Error(AMSPipe::Status::unknown_argument, "Solve", field,
+                                       "unknown argument "+field+" in Solve message");
                }
             }
          }
          ubjson::verify_marker(msg.payload, '}');
 
          if (request.title.empty()) {
-            throw AMSPipe::Error("invalid_argument: title may not be empty");
+            throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "Solve", "title",
+                                 "title may not be empty in Solve message");
          }
 
       } else if (argument == "keepResults") {
@@ -270,7 +295,8 @@ void AMSCallPipe::extract_Solve(AMSPipe::Message& msg,
          prevTitle = ubjson::read_string(msg.payload);
 
       } else {
-         throw AMSPipe::Error("unknown_argument");
+         throw AMSPipe::Error(AMSPipe::Status::unknown_argument, "Solve", argument,
+                              "unknown argument "+argument+" in Solve message");
       }
 
    }
@@ -281,14 +307,16 @@ void AMSCallPipe::extract_Solve(AMSPipe::Message& msg,
 
 void AMSCallPipe::extract_DeleteResults(AMSPipe::Message& msg, std::string& title) const {
    if (msg.name != "DeleteResults") {
-      throw AMSPipe::Error("AMSCallPipe::extract_DeleteResults called on wrong message");
+      throw AMSPipe::Error(AMSPipe::Status::logic_error, "DeleteResults", "",
+                           "DeleteResults called on message with name: "+msg.name);
    }
 
    auto argument = ubjson::read_key(msg.payload);
    if (argument == "title") {
       title = ubjson::read_string(msg.payload);
    } else {
-      throw AMSPipe::Error("unknown_argument");
+      throw AMSPipe::Error(AMSPipe::Status::unknown_argument, "DeleteResults", argument,
+                           "unknown argument "+argument+" in DeleteResults message");
    }
    ubjson::verify_marker(msg.payload, '}');
 }
