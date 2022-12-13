@@ -34,7 +34,7 @@ void ubjson::verify_marker(std::istream& is, char marker) {
    // Extracts one character from the stream and checks that is is the marker we expect.
    char c;
    is.read(&c, sizeof(c));
-   if (c != marker) throw ubjson::Error("Unexpected marker");
+   if (c != marker) throw ubjson::Error(std::string("unexpected marker: found ")+c+std::string(", expected ")+marker);
 }
 
 
@@ -57,7 +57,7 @@ bool ubjson::read_bool(std::istream& is) {
    } else if (b == 'F') {
       return false;
    } else {
-      throw ubjson::Error("Unexpected marker for bool");
+      throw ubjson::Error(std::string("unexpected marker for bool: ")+b);
    }
 }
 
@@ -87,7 +87,7 @@ int64_t ubjson::read_int(std::istream& is) {
       is.read(reinterpret_cast<char*>(&L), sizeof(L));
       return bswap_64(L);
    } else {
-      throw ubjson::Error("Unexpected integer type");
+      throw ubjson::Error(std::string("unexpected integer type: ")+marker);
    }
 }
 
@@ -104,7 +104,7 @@ double ubjson::read_real(std::istream& is) {
       is.read(reinterpret_cast<char*>(&D), sizeof(D));
       return bswap_64f(D);
    } else {
-      throw ubjson::Error("Unexpected real type");
+      throw ubjson::Error(std::string("unexpected real type: ")+marker);
    }
 }
 
@@ -142,15 +142,15 @@ std::vector<std::string> ubjson::read_string_array(std::istream& is) {
 
    } else if (m == '#') {
       // Optimized storage with count
-      throw ubjson::Error("TODO: Implement reading of optimized string arrays with just a count.");
+      throw ubjson::Error("TODO: implement reading of optimized string arrays with just a count");
 
    } else if (m == 'S') {
       // Unoptimized storage
-      throw ubjson::Error("TODO: Implement reading of unoptimized string arrays");
+      throw ubjson::Error("TODO: implement reading of unoptimized string arrays");
       ubjson::verify_marker(is, ']');
 
    } else {
-      throw ubjson::Error("Unexpected marker at the start of a string array");
+      throw ubjson::Error(std::string("unexpected marker at the start of a string array: ")+m);
    }
 }
 
@@ -175,15 +175,15 @@ std::vector<int64_t> ubjson::read_int_array(std::istream& is) {
 
    } else if (m == '#') {
       // Optimized storage with count
-      throw ubjson::Error("TODO: Implement reading of optimized int arrays with just a count");
+      throw ubjson::Error("TODO: implement reading of optimized int arrays with just a count");
 
    } else if (m == 'i' || m == 'U' || m == 'I' || m == 'l' || m == 'L') {
       // Unoptimized storage
-      throw ubjson::Error("TODO: Implement reading of unoptimized int arrays");
+      throw ubjson::Error("TODO: implement reading of unoptimized int arrays");
       ubjson::verify_marker(is, ']');
 
    } else {
-      throw ubjson::Error("Unexpected marker at the start of an int array");
+      throw ubjson::Error(std::string("unexpected marker at the start of an int array: ")+m);
    }
 }
 
@@ -205,14 +205,14 @@ std::vector<double> ubjson::read_real_array(std::istream& is) {
 
    } else if (m == '#') {
       // Optimized storage with count
-      throw ubjson::Error("TODO: Implement reading of optimized real arrays with just a count");
+      throw ubjson::Error("TODO: implement reading of optimized real arrays with just a count");
 
    } else if (m == 'd' || m == 'D') {
       // Unoptimized storage
-      throw ubjson::Error("TODO: Implement reading of unoptimized real arrays");
+      throw ubjson::Error("TODO: implement reading of unoptimized real arrays");
 
    } else {
-      throw ubjson::Error("Unexpected marker at the start of a real array");
+      throw ubjson::Error(std::string("unexpected marker at the start of a real array: ")+m);
    }
 }
 

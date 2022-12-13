@@ -116,27 +116,27 @@ void AMSCallPipe::extract_SetSystem(AMSPipe::Message& msg,
 
    // Checks on the completeness and consistency of the transferred data
    if (atomSymbols.empty()) {
-      throw AMSPipe::Error(AMSPipe::Status::logic_error, "SetSystem", "atomSymbols", "No atoms in SetSystem message");
+      throw AMSPipe::Error(AMSPipe::Status::logic_error, "SetSystem", "atomSymbols", "no atoms in SetSystem message");
    }
    if (atomSymbols_dim.size() != 1 || atomSymbols_dim[0] != atomSymbols.size()) {
       throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetSystem", "atomSymbols",
-                           "Size of atomSymbols is inconsistent with atomSymbols_dim_ in SetSystem message");
+                           "size of atomSymbols is inconsistent with atomSymbols_dim_ in SetSystem message");
    }
    if (coords.size() != 3*atomSymbols.size()) {
       throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetSystem", "coords",
-                           "Sizes of atomSymbols and coords inconsistent in SetSystem message");
+                           "sizes of atomSymbols and coords inconsistent in SetSystem message");
    }
    if (coords_dim.size() != 2 || coords_dim[0] != 3 || coords_dim[1] != atomSymbols.size()) {
       throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetSystem", "coords",
-                           "Size of coords is inconsistent with coords_dim_ in SetSystem message");
+                           "size of coords is inconsistent with coords_dim_ in SetSystem message");
    }
    if (latticeVectors_dim.size() != 2 || latticeVectors_dim[0] * latticeVectors_dim[1] != latticeVectors.size()) {
       throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetSystem", "latticeVectors",
-                           "Size of latticeVectors is inconsistent with latticeVectors_dim_ in SetSystem message");
+                           "size of latticeVectors is inconsistent with latticeVectors_dim_ in SetSystem message");
    }
    if (latticeVectors.size() != 0 && latticeVectors.size() != 3 && latticeVectors.size() != 6 && latticeVectors.size() != 9) {
       throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetSystem", "latticeVectors",
-                           "Unexpected size of latticeVectors in SetSystem message");
+                           "unexpected size of latticeVectors in SetSystem message");
    }
 }
 
@@ -169,7 +169,7 @@ void AMSCallPipe::extract_SetCoords(AMSPipe::Message& msg, double* coords) const
    // Checks on the completeness and consistency of the transferred data
    if (coords_dim.size() != 2 || coords_dim[0] * coords_dim[1] != newcoords.size()) {
       throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetCoords", "coords",
-                           "Size of coords is inconsistent with coords_dim_ in SetCoords message");
+                           "size of coords is inconsistent with coords_dim_ in SetCoords message");
    }
 
    for (size_t i = 0; i < newcoords.size(); ++i) coords[i] = newcoords[i]; // TODO: remove and write directly to coords
@@ -183,7 +183,6 @@ void AMSCallPipe::extract_SetLattice(AMSPipe::Message& msg, std::vector<double>&
    }
 
    vectors.clear();
-
    std::vector<int64_t> vectors_dim = {-1,-1};
 
    while (ubjson::peek(msg.payload) != '}'){
@@ -205,11 +204,11 @@ void AMSCallPipe::extract_SetLattice(AMSPipe::Message& msg, std::vector<double>&
    // Checks on the completeness and consistency of the transferred data
    if (vectors_dim.size() != 2 || vectors_dim[0] * vectors_dim[1] != vectors.size()) {
       throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetLattice", "vectors",
-                           "Size of vectors is inconsistent with vectors_dim_ in SetLattice message");
+                           "size of vectors is inconsistent with vectors_dim_ in SetLattice message");
    }
    if (vectors.size() != 0 && vectors.size() != 3 && vectors.size() != 6 && vectors.size() != 9) {
       throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetLattice", "vectors",
-                           "Unexpected size of vectors in SetLattice message");
+                           "unexpected size of vectors in SetLattice message");
    }
 }
 
