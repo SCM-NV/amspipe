@@ -6,26 +6,6 @@
 #include "ubjson.hpp"
 
 
-
-AMSPipe::Error::Error(Status status, const std::string& method, const std::string& argument, const std::string& message)
-:  std::runtime_error(message),
-   method(method),
-   argument(argument)
-{}
-
-
-std::ostream& AMSPipe::operator<<(std::ostream& os, const AMSPipe::SolveRequest& request) {
-   os << "   title: " << request.title << std::endl;
-   os << "   gradients: " << request.gradients << std::endl;
-   os << "   stressTensor: " << request.stressTensor  << std::endl;
-   os << "   elasticTensor: " << request.elasticTensor  << std::endl;
-   os << "   hessian: " << request.hessian  << std::endl;
-   os << "   dipoleMoment: " << request.dipoleMoment  << std::endl;
-   os << "   dipoleGradients: " << request.dipoleGradients  << std::endl;
-   return os;
-}
-
-
 // ===== AMSCallPipe =============================================================================================================
 
 AMSCallPipe::AMSCallPipe(const std::string& filename) {
@@ -322,6 +302,18 @@ void AMSCallPipe::extract_DeleteResults(AMSPipe::Message& msg, std::string& titl
 }
 
 
+std::ostream& AMSPipe::operator<<(std::ostream& os, const AMSPipe::SolveRequest& request) {
+   os << "   title: " << request.title << std::endl;
+   os << "   gradients: " << request.gradients << std::endl;
+   os << "   stressTensor: " << request.stressTensor  << std::endl;
+   os << "   elasticTensor: " << request.elasticTensor  << std::endl;
+   os << "   hessian: " << request.hessian  << std::endl;
+   os << "   dipoleMoment: " << request.dipoleMoment  << std::endl;
+   os << "   dipoleGradients: " << request.dipoleGradients  << std::endl;
+   return os;
+}
+
+
 // ===== AMSReplyPipe ============================================================================================================
 
 AMSReplyPipe::AMSReplyPipe(const std::string& filename) {
@@ -346,9 +338,9 @@ void AMSReplyPipe::send_return(AMSPipe::Status status, const std::string& method
       ubjson::write_key(buf, "argument");
       ubjson::write_string(buf, argument);
    }
-   if (!argument.empty()) {
-      ubjson::write_key(buf, "argument");
-      ubjson::write_string(buf, argument);
+   if (!message.empty()) {
+      ubjson::write_key(buf, "message");
+      ubjson::write_string(buf, message);
    }
    buf << '}' << '}';
 

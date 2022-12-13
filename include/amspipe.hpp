@@ -5,7 +5,6 @@
 #include <string>
 #include <sstream>
 #include <vector>
-#include <span>
 
 
 namespace AMSPipe {
@@ -28,7 +27,13 @@ namespace AMSPipe {
          std::string argument;
          // as the "message" we just use the .what() of the base exception
 
-         Error(Status status, const std::string& method, const std::string& argument, const std::string& message);
+         Error(Status status, const std::string& method, const std::string& argument, const std::string& message)
+         :  std::runtime_error(message),
+            status(status),
+            method(method),
+            argument(argument)
+{}
+
    };
 
    struct Message {

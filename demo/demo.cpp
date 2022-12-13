@@ -29,8 +29,7 @@ int main(int argc, char* argv[]) {
    double                   totalCharge;
 
    // Cache of results we have kept:
-   std::set<std::string> keptResults;
-   // (For this demo we just keep their titles and no actual data ...)
+   std::set<std::string> keptResults; // For this demo we just keep their titles and no actual data ...
 
    // Variable to store the error until we send the corresponding return message:
    std::optional<AMSPipe::Error> error;
@@ -129,7 +128,7 @@ int main(int argc, char* argv[]) {
             // Exception thrown during "Set" method: buffer it for return later.
             if (!error) error = exc;
          } else {
-            // Exception thrown during non-"Set" method: return immediately.
+            // Exception thrown during non-"Set" method: return error immediately.
             reply_pipe.send_return(exc.status, exc.method, exc.argument, exc.what());
          }
       }

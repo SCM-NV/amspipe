@@ -5,10 +5,16 @@
 #include <iostream>
 #include <vector>
 
+#include "amspipe.hpp"
+
 namespace ubjson {
 
-   // Error to throw in case of these methods fail
-   class Error : public std::runtime_error { using std::runtime_error::runtime_error; };
+   // define ubjson::Error as AMSPipe::Error with decode_error status
+   class Error : public AMSPipe::Error {
+      public:
+         Error(const std::string& message)
+         :  AMSPipe::Error(AMSPipe::Status::decode_error, "", "", message) {}
+   };
 
 
    // Methods for reading UBJSON from a std::istream
