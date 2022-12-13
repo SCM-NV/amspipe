@@ -347,6 +347,17 @@ void AMSReplyPipe::send_return(AMSPipe::Status status, const std::string& method
 }
 
 
+void write_real_2darray_with_dim(std::ostream& os, const std::string& key, const double* arr, const int32_t dim[2]) {
+   ubjson::write_key(os, key);
+   ubjson::write_real_array(os, arr, dim[0]*dim[1]);
+   ubjson::write_key(os, key+"_dim_");
+   os << '[';
+   ubjson::write_int(os, dim[0]);
+   ubjson::write_int(os, dim[1]);
+   os << ']';
+}
+
+
 void AMSReplyPipe::send_results(const AMSPipe::Results& results) {
    std::stringstream buf;
 
@@ -358,17 +369,13 @@ void AMSReplyPipe::send_results(const AMSPipe::Results& results) {
    ubjson::write_key(buf, "energy");
    ubjson::write_real(buf, results.energy);
 
-   if (results.gradients) {
-      ubjson::write_key(buf, "gradients");
-      ubjson::write_real_array(buf, results.gradients, results.gradients_dim[0]*results.gradients_dim[1]);
-      ubjson::write_key(buf, "gradients_dim_");
-      buf << '[';
-      ubjson::write_int(buf, results.gradients_dim[0]);
-      ubjson::write_int(buf, results.gradients_dim[1]);
-      buf << ']';
-   }
-
-   // TODO: write other optional results ...
+   // all other results are optional
+   if (results.gradients)       write_real_2darray_with_dim(buf, "gradients",       results.gradients,       results.gradients_dim);
+   if (results.stressTensor)    write_real_2darray_with_dim(buf, "stressTensor",    results.stressTensor,    results.stressTensor_dim);
+   if (results.elasticTensor)   write_real_2darray_with_dim(buf, "elasticTensor",   results.elasticTensor,   results.elasticTensor_dim);
+   if (results.hessian)         write_real_2darray_with_dim(buf, "hessian",         results.hessian,         results.hessian_dim);
+   if (results.dipoleMoment)    write_real_2darray_with_dim(buf, "dipoleMoment",    results.dipoleMoment,    results.dipoleMoment_dim);
+   if (results.dipoleGradients) write_real_2darray_with_dim(buf, "dipoleGradients", results.dipoleGradients, results.dipoleGradients_dim);
 
    buf << '}' << '}';
 

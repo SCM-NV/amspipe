@@ -32,7 +32,7 @@ namespace AMSPipe {
             status(status),
             method(method),
             argument(argument)
-{}
+         {}
 
    };
 
