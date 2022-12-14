@@ -42,6 +42,8 @@ void amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message,
    double** latticeVectors,
    double*  totalCharge
 );
+void amscallpipe_extract_SetCoords(amscallpipe_t cp, amspipe_message_t message, double* coords);
+void amscallpipe_extract_SetLattice(amscallpipe_t cp, amspipe_message_t message, int64_t* numLatVecs, double** latticeVectors);
 
 // functions for the reply pipe
 amsreplypipe_t new_amsreplypipe(const char* filename);

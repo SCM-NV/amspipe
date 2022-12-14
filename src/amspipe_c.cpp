@@ -58,9 +58,9 @@ void amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message,
    // Free output arrays:
    if (*numAtoms != 0) {
       for (int64_t iat = 0; iat < *numAtoms; ++iat) free((*atomSymbols)[iat]);
-      free(*atomSymbols);
-      free(*coords);
-      free(*latticeVectors);
+      free(*atomSymbols); *atomSymbols = NULL;
+      free(*coords); *coords = NULL;
+      if (*latticeVectors) { free(*latticeVectors); } *latticeVectors = NULL;
    }
 
    // Read message into std::vectors:
@@ -73,15 +73,48 @@ void amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message,
 
    *numAtoms = atSyms.size();
    *atomSymbols = static_cast<char**>(malloc(atSyms.size()*sizeof(char*)));
-   for (int64_t i = 0; i < atSyms.size(); ++i) (*atomSymbols)[i] = strdup(atSyms[i].c_str());
+   for (size_t i = 0; i < atSyms.size(); ++i) (*atomSymbols)[i] = strdup(atSyms[i].c_str());
 
    *coords = static_cast<double*>(malloc(crds.size()*sizeof(double)));
-   for (int64_t i = 0; i < crds.size(); ++i) (*coords)[i] = crds[i];
+   for (size_t i = 0; i < crds.size(); ++i) (*coords)[i] = crds[i];
 
    *numLatVecs = latVecs.size() / 3;
-   *latticeVectors = static_cast<double*>(malloc(latVecs.size()*sizeof(double)));
-   for (int64_t i = 0; i < latVecs.size(); ++i) (*latticeVectors)[i] = latVecs[i];
+   if (*numLatVecs > 0) {
+      *latticeVectors = static_cast<double*>(malloc(latVecs.size()*sizeof(double)));
+      for (size_t i = 0; i < latVecs.size(); ++i) (*latticeVectors)[i] = latVecs[i];
+   }
 
+}
+
+
+void amscallpipe_extract_SetCoords(amscallpipe_t cp, amspipe_message_t message, double* coords) {
+   const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
+   AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
+   self->extract_SetCoords(*msg_p, coords);
+}
+
+
+void amscallpipe_extract_SetLattice(amscallpipe_t cp, amspipe_message_t message,
+   int64_t* numLatVecs,
+   double** latticeVectors
+) {
+   const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
+   AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
+
+   // Read message into std::vectors:
+   std::vector<double> latVecs;
+   self->extract_SetLattice(*msg_p, latVecs);
+
+   if (*numLatVecs /= latVecs.size() / 3) { // periodicity changed
+      *numLatVecs = latVecs.size() / 3;
+      free(*latticeVectors);
+      if (numLatVecs != 0) {
+         *latticeVectors = static_cast<double*>(malloc(latVecs.size()*sizeof(double)));
+      } else {
+         *latticeVectors = nullptr;
+      }
+   }
+   for (size_t i = 0; i < latVecs.size(); ++i) (*latticeVectors)[i] = latVecs[i];
 }
 
 
