@@ -1,5 +1,7 @@
 #!/bin/sh
 
+DEMO_LANGUAGE=c
+
 NSCM=1 $AMSBIN/ams --delete-old-results << EOF
 
 Task GeometryOptimization
@@ -26,10 +28,16 @@ System
       Ar      -0.11981564      -1.00415247       1.24533480
       Ar      -3.36164307      -3.00218414       1.73932295
    End
+   !Charge 1.0
+   !Lattice
+   !   100   0   0
+   !     0 100   0
+   !     0   0 100
+   !End
 End
 
 Engine Pipe
-   WorkerCommand $(pwd)/../build/demo
+   WorkerCommand $(pwd)/../build/demo_${DEMO_LANGUAGE}
 EndEngine
 
 EOF

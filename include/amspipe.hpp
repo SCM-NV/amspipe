@@ -1,3 +1,5 @@
+// C++ interface to amspipe library
+
 #ifndef AMSPIPE_HPP_INCLUDED
 #define AMSPIPE_HPP_INCLUDED
 

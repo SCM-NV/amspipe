@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
    std::vector<std::string> atomSymbols;
    std::vector<double>      coords;
    std::vector<double>      latticeVectors;
-   double                   totalCharge;
+   double                   totalCharge = 0.0;
 
    // Cache of results we have kept:
    std::set<std::string> keptResults; // For this demo we just keep their titles and no actual data ...
@@ -133,6 +133,7 @@ int main(int argc, char* argv[]) {
          }
       }
    }
+   return 0;
 }
 
 
