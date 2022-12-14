@@ -15,7 +15,7 @@ void print_system(
 //double LJ_potential(const double* coords, double* gradients);
 
 
-int main(int argc, char* argv[]) {
+int main() {
 
    amscallpipe_t   call_pipe = new_amscallpipe(NULL);
    amsreplypipe_t reply_pipe = new_amsreplypipe(NULL);

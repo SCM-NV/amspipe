@@ -17,7 +17,7 @@ void print_system(
 double LJ_potential(const std::vector<double>& coords, std::vector<double>& gradients);
 
 
-int main(int argc, char* argv[]) {
+int main() {
 
    AMSCallPipe   call_pipe;
    AMSReplyPipe reply_pipe;
