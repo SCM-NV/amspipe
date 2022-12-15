@@ -301,18 +301,6 @@ void AMSCallPipe::extract_DeleteResults(AMSPipe::Message& msg, std::string& titl
 }
 
 
-std::ostream& AMSPipe::operator<<(std::ostream& os, const AMSPipe::SolveRequest& request) {
-   os << "   title: " << request.title << std::endl;
-   os << "   gradients: " << request.gradients << std::endl;
-   os << "   stressTensor: " << request.stressTensor  << std::endl;
-   os << "   elasticTensor: " << request.elasticTensor  << std::endl;
-   os << "   hessian: " << request.hessian  << std::endl;
-   os << "   dipoleMoment: " << request.dipoleMoment  << std::endl;
-   os << "   dipoleGradients: " << request.dipoleGradients  << std::endl;
-   return os;
-}
-
-
 // ===== AMSReplyPipe ============================================================================================================
 
 AMSReplyPipe::AMSReplyPipe(const std::string& filename) {

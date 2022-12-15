@@ -53,23 +53,22 @@ namespace AMSPipe {
       bool dipoleMoment = false;
       bool dipoleGradients = false;
    };
-   std::ostream& operator<<(std::ostream& os, const AMSPipe::SolveRequest& request);
 
    struct Results {
       std::vector<std::string> messages;
       double energy;
       double* gradients = nullptr;
-      int32_t gradients_dim[2];
+      int32_t gradients_dim[2] = {0,0};
       double* stressTensor = nullptr;
-      int32_t stressTensor_dim[2];
+      int32_t stressTensor_dim[2] = {0,0};
       double* elasticTensor = nullptr;
-      int32_t elasticTensor_dim[2];
+      int32_t elasticTensor_dim[2] = {0,0};
       double* hessian = nullptr;
-      int32_t hessian_dim[2];
+      int32_t hessian_dim[2] = {0,0};
       double* dipoleMoment = nullptr;
-      int32_t dipoleMoment_dim[2];
+      int32_t dipoleMoment_dim[2] = {0,0};
       double* dipoleGradients = nullptr;
-      int32_t dipoleGradients_dim[2];
+      int32_t dipoleGradients_dim[2] = {0,0};
    };
 };
 
