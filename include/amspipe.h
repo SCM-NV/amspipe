@@ -104,6 +104,8 @@ void amscallpipe_extract_Solve(amscallpipe_t cp, amspipe_message_t message,
    char** prevTitle
 );
 
+void amscallpipe_extract_DeleteResults(amscallpipe_t cp, amspipe_message_t message, char** title);
+
 
 // ===== AMSReplyPipe ============================================================================================================
 

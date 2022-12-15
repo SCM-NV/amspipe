@@ -75,16 +75,16 @@ int main() {
 
             call_pipe.extract_Solve(msg, request, keepResults, prevTitle);
 
-            std::cout << "Request:" << std::endl;
-            std::cout << "   title: " << request.title << std::endl;
-            std::cout << "   gradients: " << request.gradients << std::endl;
-            std::cout << "   stressTensor: " << request.stressTensor  << std::endl;
-            std::cout << "   elasticTensor: " << request.elasticTensor  << std::endl;
-            std::cout << "   hessian: " << request.hessian  << std::endl;
-            std::cout << "   dipoleMoment: " << request.dipoleMoment  << std::endl;
-            std::cout << "   dipoleGradients: " << request.dipoleGradients  << std::endl;
-            std::cout << "keepResults: " << keepResults << std::endl;
-            if (!prevTitle.empty()) std::cout << "prevTitle: " << prevTitle << std::endl;
+            //std::cout << "Request:" << std::endl;
+            //std::cout << "   title: " << request.title << std::endl;
+            //std::cout << "   gradients: " << request.gradients << std::endl;
+            //std::cout << "   stressTensor: " << request.stressTensor  << std::endl;
+            //std::cout << "   elasticTensor: " << request.elasticTensor  << std::endl;
+            //std::cout << "   hessian: " << request.hessian  << std::endl;
+            //std::cout << "   dipoleMoment: " << request.dipoleMoment  << std::endl;
+            //std::cout << "   dipoleGradients: " << request.dipoleGradients  << std::endl;
+            //std::cout << "keepResults: " << keepResults << std::endl;
+            //if (!prevTitle.empty()) std::cout << "prevTitle: " << prevTitle << std::endl;
 
             if (keptResults.find(request.title) != keptResults.end()) {
                throw AMSPipe::Error(AMSPipe::Status::logic_error, "Solve", "title",

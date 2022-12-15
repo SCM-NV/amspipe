@@ -18,10 +18,9 @@ double LJ_potential(int nAtoms, const double* coords, double* gradients);
 
 int main() {
 
-   amscallpipe_t        call_pipe = new_amscallpipe(NULL);
-   amsreplypipe_t      reply_pipe = new_amsreplypipe(NULL);
-   amspipe_message_t          msg = new_amspipe_message();
-   amspipe_solverequest_t request = new_amspipe_solverequest();
+   amscallpipe_t   call_pipe = new_amscallpipe(NULL);
+   amsreplypipe_t reply_pipe = new_amsreplypipe(NULL);
+   amspipe_message_t     msg = new_amspipe_message();
 
    // Variables holding our current system:
    int64_t numAtoms       = 0;
@@ -69,6 +68,7 @@ int main() {
          //print_system(numAtoms, atomSymbols, coords, numLatVecs, latticeVectors, totalCharge);
 
       } else if (strcmp(msg.name, "Solve") == 0) {
+         amspipe_solverequest_t request = new_amspipe_solverequest();
          bool keepResults;
          char* prevTitle = NULL;
 
@@ -100,12 +100,13 @@ int main() {
             amsreplypipe_send_return(reply_pipe, AMSPIPE_STATUS_RUNTIME_ERROR, "Solve", NULL, "error evaluating the potential");
          }
 
+         delete_amspipe_solverequest(&request);
          if (prevTitle) free(prevTitle);
          delete_amspipe_results(&results);
 
       } else if (strcmp(msg.name, "DeleteResults") == 0) {
-         //char* title;
-         //amscallpipe_extract_DeleteResults(call_pipe, msg, &title);
+         char* title;
+         amscallpipe_extract_DeleteResults(call_pipe, msg, &title);
          //printf("DeleteResults title: %s\n", title);
 
          amsreplypipe_send_return(reply_pipe, AMSPIPE_STATUS_SUCCESS, NULL, NULL, NULL);
@@ -116,7 +117,6 @@ int main() {
    delete_amscallpipe(&call_pipe);
    delete_amsreplypipe(&reply_pipe);
    delete_amspipe_message(&msg);
-   delete_amspipe_solverequest(&request);
    return 0;
 }
 

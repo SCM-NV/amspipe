@@ -1,6 +1,6 @@
 #!/bin/sh
 
-DEMO_LANGUAGE=c
+#DEMO_LANGUAGE=c
 
 NSCM=1 $AMSBIN/ams --delete-old-results << EOF
 

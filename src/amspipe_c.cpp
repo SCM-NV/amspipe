@@ -218,6 +218,19 @@ void amscallpipe_extract_Solve(amscallpipe_t cp, amspipe_message_t message,
 }
 
 
+void amscallpipe_extract_DeleteResults(amscallpipe_t cp, amspipe_message_t message, char** title) {
+   const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
+   AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
+
+   if (*title) { free(*title); *title = nullptr; }
+
+   std::string t;
+   self->extract_DeleteResults(*msg_p, t);
+
+   if (!t.empty()) *title = strdup(t.c_str());
+}
+
+
 // ===== AMSReplyPipe ============================================================================================================
 
 amsreplypipe_t new_amsreplypipe(const char* filename) {
