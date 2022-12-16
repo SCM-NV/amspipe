@@ -5,6 +5,30 @@ module amspipe
    implicit none
    private
 
+   ! ===============
+   !  AMSPipeStatus
+   ! ===============
+   !
+   enum, bind(C)
+      enumerator :: AMSPIPE_STATUS_SUCCESS          = 0
+      enumerator :: AMSPIPE_STATUS_DECODE_ERROR     = 1
+      enumerator :: AMSPIPE_STATUS_LOGIC_ERROR      = 2
+      enumerator :: AMSPIPE_STATUS_RUNTIME_ERROR    = 3
+      enumerator :: AMSPIPE_STATUS_UNKNOWN_VERSION  = 4
+      enumerator :: AMSPIPE_STATUS_UNKNOWN_METHOD   = 5
+      enumerator :: AMSPIPE_STATUS_UNKNOWN_ARGUMENT = 6
+      enumerator :: AMSPIPE_STATUS_INVALID_ARGUMENT = 7
+   end enum
+   public :: AMSPIPE_STATUS_SUCCESS
+   public :: AMSPIPE_STATUS_DECODE_ERROR
+   public :: AMSPIPE_STATUS_LOGIC_ERROR
+   public :: AMSPIPE_STATUS_RUNTIME_ERROR
+   public :: AMSPIPE_STATUS_UNKNOWN_VERSION
+   public :: AMSPIPE_STATUS_UNKNOWN_METHOD
+   public :: AMSPIPE_STATUS_UNKNOWN_ARGUMENT
+   public :: AMSPIPE_STATUS_INVALID_ARGUMENT
+   integer, parameter, public :: AMSPipeStatus = kind(AMSPIPE_STATUS_SUCCESS)
+
 
    ! ================
    !  AMSPipeMessage
@@ -72,25 +96,45 @@ module amspipe
       type(C_PTR) :: p = C_NULL_PTR ! AMSReplyPipe*
    end type
    type, public :: AMSReplyPipe
-      type(amsreplypipe_t), private :: cp
+      type(amsreplypipe_t), private :: rp
    contains
       generic,   public  :: New => NewReplyPipe
       procedure, private :: NewReplyPipe
       generic,   public  :: Delete => DeleteReplyPipe
       procedure, private :: DeleteReplyPipe
       final              :: FinalizeReplyPipe
+      procedure, public  :: Send_return
    end type
    interface
       type(amsreplypipe_t) function new_amsreplypipe(filename) bind(C, name="new_amsreplypipe")
          import
          character(C_CHAR), intent(in) :: filename(*)
       end function
-      subroutine delete_amsreplypipe(cp) bind(C, name="delete_amsreplypipe")
+      subroutine delete_amsreplypipe(rp) bind(C, name="delete_amsreplypipe")
          import
-         type(C_PTR), value, intent(in) :: cp ! amsreplypipe_t*
+         type(C_PTR), value, intent(in) :: rp ! amsreplypipe_t*
+      end subroutine
+      subroutine amsreplypipe_send_return(rp, status, method, argument, message) bind(C, name="amsreplypipe_send_return")
+         import
+         type(amsreplypipe_t),   value :: rp
+         integer(AMSPipeStatus), value :: status
+         character(C_CHAR), intent(in) :: method(*)
+         character(C_CHAR), intent(in) :: argument(*)
+         character(C_CHAR), intent(in) :: message(*)
       end subroutine
    end interface
 
+
+   ! ===========
+   !  Utilities
+   ! ===========
+   !
+   interface
+      pure integer(C_SIZE_T) function C_strlen(str) bind(C, name="strlen")
+         import
+         type(C_PTR), value, intent(in) :: str
+      end function
+   end interface
 
 contains
 
@@ -135,6 +179,7 @@ contains
       type(AMSPipeMessage), intent(out), target :: message
 
       call amscallpipe_receive(self%cp, C_LOC(message%msg))
+      message%name = C_F_string(message%msg%name)
 
    end subroutine
 
@@ -145,19 +190,41 @@ contains
    subroutine NewReplyPipe(self, filename)
       class(AMSReplyPipe), intent(out) :: self
       character(*),       intent(in)   :: filename
-      self%cp = new_amsreplypipe(filename//C_NULL_CHAR)
+      self%rp = new_amsreplypipe(filename//C_NULL_CHAR)
    end subroutine
 
 
    impure elemental subroutine DeleteReplyPipe(self)
       class(AMSReplyPipe), intent(inout), target :: self
-      call delete_amsreplypipe(C_LOC(self%cp))
+      call delete_amsreplypipe(C_LOC(self%rp))
    end subroutine
    !
    impure elemental subroutine FinalizeReplyPipe(self)
       type(AMSReplyPipe), intent(inout) :: self
       call self%Delete()
    end subroutine
+
+
+   subroutine Send_return(self, status, method, argument, message)
+      class(AMSReplyPipe),    intent(inout) :: self
+      integer(AMSPipeStatus), intent(in)    :: status
+      character(*),           intent(in)    :: method, argument, message
+
+      call amsreplypipe_send_return(self%rp, status, method//C_NULL_CHAR, argument//C_NULL_CHAR, message//C_NULL_CHAR)
+
+   end subroutine
+
+
+! ===== Utilities ================================================================================================================
+
+
+   function C_F_string(cstr) result(fstr)
+      type(C_PTR), intent(in)   :: cstr
+      character(:), allocatable :: fstr
+      character(kind=C_CHAR, len=C_strlen(cstr)), pointer :: tmp
+      call C_F_POINTER(cstr, tmp)
+      fstr = tmp
+   end function
 
 
 end module

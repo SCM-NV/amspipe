@@ -124,6 +124,8 @@ int main() {
             amsreplypipe_send_return(reply_pipe, AMSPIPE_STATUS_SUCCESS, NULL, NULL, NULL);
          }
 
+      } else {
+         // TODO: handle unknown method call
       }
 
       if (error && strncmp(msg.name, "Set", 3) != 0) { // Error during non-"Set" method: return and clear error immediately.
