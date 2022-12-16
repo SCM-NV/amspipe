@@ -125,7 +125,11 @@ int main() {
          }
 
       } else {
-         // TODO: handle unknown method call
+         error = malloc(sizeof(amspipe_error_t));
+         error->status = AMSPIPE_STATUS_UNKNOWN_METHOD;
+         error->method = strdup(msg.name);
+         error->argument = NULL;
+         error->message = strdup("unknown method called");
       }
 
       if (error && strncmp(msg.name, "Set", 3) != 0) { // Error during non-"Set" method: return and clear error immediately.
