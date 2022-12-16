@@ -30,6 +30,9 @@ int main() {
    double* latticeVectors = NULL;
    double  totalCharge    = 0.0;
 
+   // We do not make an attempt to keep track of the cached results in the C language demo.
+   // Just too much effort since there is no dictionary in the C standard library ...
+
    // Variable to store the error until we send the corresponding return message:
    amspipe_error_t* error = NULL;
 
@@ -117,6 +120,7 @@ int main() {
          error = amscallpipe_extract_DeleteResults(call_pipe, msg, &title);
          if (!error) {
             //printf("DeleteResults title: %s\n", title);
+            // We do not keep a cache of results, so we just confirm the deletion and move on ...
             amsreplypipe_send_return(reply_pipe, AMSPIPE_STATUS_SUCCESS, NULL, NULL, NULL);
          }
 

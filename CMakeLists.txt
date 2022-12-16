@@ -61,4 +61,14 @@ enable_warnings(demo_c)
 
 target_link_libraries(demo_c PRIVATE amspipe)
 
-# TODO: demo application for Fortran
+# demo application for Fortran
+
+ENABLE_LANGUAGE(Fortran)
+
+add_executable(demo_F90
+   demo/demo.F90
+)
+
+enable_warnings(demo_F90)
+
+target_link_libraries(demo_F90 PRIVATE amspipe)
