@@ -23,6 +23,28 @@ void delete_amspipe_message(amspipe_message_t* message) {
 }
 
 
+// ===== AMSPipe::Error ==========================================================================================================
+
+void delete_amspipe_error(amspipe_error_t** error) {
+   if (*error) {
+      free((*error)->method);
+      free((*error)->argument);
+      free((*error)->message);
+      free(*error);
+   }
+   *error = nullptr;
+}
+
+static amspipe_error_t* new_amspipe_error_from_exception(const AMSPipe::Error& exc) {
+   amspipe_error_t* err = static_cast<amspipe_error_t*>(malloc(sizeof(amspipe_error_t)));
+   err->status = static_cast<amspipe_status_t>(exc.status);
+   err->method = exc.method.empty() ? nullptr : strdup(exc.method.c_str());
+   err->argument = exc.argument.empty() ? nullptr : strdup(exc.argument.c_str());
+   err->message = strdup(exc.what());
+   return err;
+}
+
+
 // ===== AMSPipe::SolveRequest ===================================================================================================
 
 amspipe_solverequest_t new_amspipe_solverequest() {
@@ -63,17 +85,15 @@ amspipe_results_t new_amspipe_results() {
 
 void delete_amspipe_results(amspipe_results_t* results) {
    if (results->messages) {
-      for (int64_t i = 0; i < results->numMessages; ++i) {
-         if (results->messages[i]) free(results->messages[i]);
-      }
+      for (int64_t i = 0; i < results->numMessages; ++i) free(results->messages[i]);
       free(results->messages);
    }
-   if (results->gradients)       free(results->gradients);
-   if (results->stressTensor)    free(results->stressTensor);
-   if (results->elasticTensor)   free(results->elasticTensor);
-   if (results->hessian)         free(results->hessian);
-   if (results->dipoleMoment)    free(results->dipoleMoment);
-   if (results->dipoleGradients) free(results->dipoleGradients);
+   free(results->gradients);
+   free(results->stressTensor);
+   free(results->elasticTensor);
+   free(results->hessian);
+   free(results->dipoleMoment);
+   free(results->dipoleGradients);
    *results = new_amspipe_results();
 }
 
@@ -109,14 +129,19 @@ void amscallpipe_receive(amscallpipe_t cp, amspipe_message_t* message) {
 }
 
 
-void amscallpipe_extract_Hello(amscallpipe_t cp, amspipe_message_t message, int64_t* version) {
-   const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
-   AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
-   self->extract_Hello(*msg_p, *version);
+amspipe_error_t* amscallpipe_extract_Hello(amscallpipe_t cp, amspipe_message_t message, int64_t* version) {
+   try {
+      const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
+      AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
+      self->extract_Hello(*msg_p, *version);
+   } catch (const AMSPipe::Error& exc) {
+      return new_amspipe_error_from_exception(exc);
+   }
+   return nullptr;
 }
 
 
-void amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message,
+amspipe_error_t* amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message,
    int64_t* numAtoms,
    char***  atomSymbols,
    double** coords,
@@ -124,110 +149,143 @@ void amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message,
    double** latticeVectors,
    double*  totalCharge
 ) {
-   const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
-   AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
+   try {
+      const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
+      AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
 
-   // Free output arrays:
-   if (*numAtoms != 0) {
-      for (int64_t iat = 0; iat < *numAtoms; ++iat) free((*atomSymbols)[iat]);
-      free(*atomSymbols); *atomSymbols = NULL;
-      free(*coords); *coords = NULL;
-      if (*latticeVectors) { free(*latticeVectors); } *latticeVectors = NULL;
+      // Clean output values:
+      if (*atomSymbols) {
+         for (int64_t iat = 0; iat < *numAtoms; ++iat) free((*atomSymbols)[iat]);
+         free(*atomSymbols); *atomSymbols = nullptr;
+      }
+      free(*coords); *coords = nullptr;
+      free(*latticeVectors); *latticeVectors = nullptr;
+      *numAtoms = 0;
+      *numLatVecs = 0;
+      *totalCharge = 0.0;
+
+      // Read message into std::vectors:
+      std::vector<std::string> atSyms;
+      std::vector<double>      crds;
+      std::vector<double>      latVecs;
+      self->extract_SetSystem(*msg_p, atSyms, crds, latVecs, *totalCharge);
+
+      // Write data to freshly malloc'd output arrays:
+
+      *numAtoms = atSyms.size();
+      *atomSymbols = static_cast<char**>(malloc(atSyms.size()*sizeof(char*)));
+      for (size_t i = 0; i < atSyms.size(); ++i) (*atomSymbols)[i] = strdup(atSyms[i].c_str());
+
+      *coords = static_cast<double*>(malloc(crds.size()*sizeof(double)));
+      for (size_t i = 0; i < crds.size(); ++i) (*coords)[i] = crds[i];
+
+      *numLatVecs = latVecs.size() / 3;
+      if (*numLatVecs > 0) {
+         *latticeVectors = static_cast<double*>(malloc(latVecs.size()*sizeof(double)));
+         for (size_t i = 0; i < latVecs.size(); ++i) (*latticeVectors)[i] = latVecs[i];
+      }
+
+   } catch (const AMSPipe::Error& exc) {
+      // output is already clean in case of error: we cleaned it in the beginning!
+      return new_amspipe_error_from_exception(exc);
    }
-
-   // Read message into std::vectors:
-   std::vector<std::string> atSyms;
-   std::vector<double>      crds;
-   std::vector<double>      latVecs;
-   self->extract_SetSystem(*msg_p, atSyms, crds, latVecs, *totalCharge);
-
-   // Write data to freshly malloc'd output arrays:
-
-   *numAtoms = atSyms.size();
-   *atomSymbols = static_cast<char**>(malloc(atSyms.size()*sizeof(char*)));
-   for (size_t i = 0; i < atSyms.size(); ++i) (*atomSymbols)[i] = strdup(atSyms[i].c_str());
-
-   *coords = static_cast<double*>(malloc(crds.size()*sizeof(double)));
-   for (size_t i = 0; i < crds.size(); ++i) (*coords)[i] = crds[i];
-
-   *numLatVecs = latVecs.size() / 3;
-   if (*numLatVecs > 0) {
-      *latticeVectors = static_cast<double*>(malloc(latVecs.size()*sizeof(double)));
-      for (size_t i = 0; i < latVecs.size(); ++i) (*latticeVectors)[i] = latVecs[i];
-   }
-
+   return nullptr;
 }
 
 
-void amscallpipe_extract_SetCoords(amscallpipe_t cp, amspipe_message_t message, double* coords) {
-   const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
-   AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
-   self->extract_SetCoords(*msg_p, coords);
+amspipe_error_t* amscallpipe_extract_SetCoords(amscallpipe_t cp, amspipe_message_t message, double* coords) {
+   try {
+      const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
+      AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
+      self->extract_SetCoords(*msg_p, coords);
+   } catch (const AMSPipe::Error& exc) {
+      return new_amspipe_error_from_exception(exc);
+   }
+   return nullptr;
 }
 
 
-void amscallpipe_extract_SetLattice(amscallpipe_t cp, amspipe_message_t message,
+amspipe_error_t* amscallpipe_extract_SetLattice(amscallpipe_t cp, amspipe_message_t message,
    int64_t* numLatVecs,
    double** latticeVectors
 ) {
-   const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
-   AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
+   try {
+      const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
+      AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
 
-   // Read message into std::vectors:
-   std::vector<double> latVecs;
-   self->extract_SetLattice(*msg_p, latVecs);
+      // Read message into std::vectors:
+      std::vector<double> latVecs;
+      self->extract_SetLattice(*msg_p, latVecs);
 
-   if (*numLatVecs /= latVecs.size() / 3) { // periodicity changed
-      *numLatVecs = latVecs.size() / 3;
-      free(*latticeVectors);
-      if (numLatVecs != 0) {
-         *latticeVectors = static_cast<double*>(malloc(latVecs.size()*sizeof(double)));
-      } else {
-         *latticeVectors = nullptr;
+      if (*numLatVecs /= latVecs.size() / 3) { // periodicity changed
+         *numLatVecs = latVecs.size() / 3;
+         free(*latticeVectors); *latticeVectors = nullptr;
+         if (*numLatVecs != 0) *latticeVectors = static_cast<double*>(malloc(latVecs.size()*sizeof(double)));
       }
+      for (size_t i = 0; i < latVecs.size(); ++i) (*latticeVectors)[i] = latVecs[i];
+
+   } catch (const AMSPipe::Error& exc) {
+      // make sure all output is clean if we return an error
+      *numLatVecs = 0;
+      free(*latticeVectors); *latticeVectors = nullptr;
+      return new_amspipe_error_from_exception(exc);
    }
-   for (size_t i = 0; i < latVecs.size(); ++i) (*latticeVectors)[i] = latVecs[i];
+   return nullptr;
 }
 
 
-void amscallpipe_extract_Solve(amscallpipe_t cp, amspipe_message_t message,
+amspipe_error_t* amscallpipe_extract_Solve(amscallpipe_t cp, amspipe_message_t message,
    amspipe_solverequest_t* request,
    bool* keepResults,
    char** prevTitle
 ) {
-   const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
-   AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
+   try {
+      const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
+      AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
 
-   if (request->title) { free(request->title); request->title = nullptr; }
-   if (*prevTitle)     { free(*prevTitle);         *prevTitle = nullptr; }
+      *keepResults = false;
+      free(request->title); request->title = nullptr;
+      free(*prevTitle);         *prevTitle = nullptr;
 
-   AMSPipe::SolveRequest rq;
-   std::string pT;
-   self->extract_Solve(*msg_p, rq, *keepResults, pT);
+      AMSPipe::SolveRequest rq;
+      std::string pT;
+      self->extract_Solve(*msg_p, rq, *keepResults, pT);
 
-   if (!rq.title.empty()) request->title = strdup(rq.title.c_str());
-   request->quiet           = rq.quiet;
-   request->gradients       = rq.gradients;
-   request->stressTensor    = rq.stressTensor;
-   request->elasticTensor   = rq.elasticTensor;
-   request->hessian         = rq.hessian;
-   request->dipoleMoment    = rq.dipoleMoment;
-   request->dipoleGradients = rq.dipoleGradients;
+      if (!rq.title.empty()) request->title = strdup(rq.title.c_str());
+      request->quiet           = rq.quiet;
+      request->gradients       = rq.gradients;
+      request->stressTensor    = rq.stressTensor;
+      request->elasticTensor   = rq.elasticTensor;
+      request->hessian         = rq.hessian;
+      request->dipoleMoment    = rq.dipoleMoment;
+      request->dipoleGradients = rq.dipoleGradients;
 
-   if (!pT.empty()) *prevTitle = strdup(pT.c_str());
+      if (!pT.empty()) *prevTitle = strdup(pT.c_str());
+
+   } catch (const AMSPipe::Error& exc) {
+      // output is already clean in case of errors: self->extract_Solve was the last thing that could have thrown!
+      return new_amspipe_error_from_exception(exc);
+   }
+   return nullptr;
 }
 
 
-void amscallpipe_extract_DeleteResults(amscallpipe_t cp, amspipe_message_t message, char** title) {
-   const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
-   AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
+amspipe_error_t* amscallpipe_extract_DeleteResults(amscallpipe_t cp, amspipe_message_t message, char** title) {
+   try {
+      const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
+      AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
 
-   if (*title) { free(*title); *title = nullptr; }
+      free(*title); *title = nullptr;
 
-   std::string t;
-   self->extract_DeleteResults(*msg_p, t);
+      std::string t;
+      self->extract_DeleteResults(*msg_p, t);
 
-   if (!t.empty()) *title = strdup(t.c_str());
+      if (!t.empty()) *title = strdup(t.c_str());
+   } catch (const AMSPipe::Error& exc) {
+      // output is already clean in case of errors: self->extract_DeleteResults was the last thing that could have thrown!
+      return new_amspipe_error_from_exception(exc);
+   }
+   return nullptr;
 }
 
 

@@ -25,6 +25,17 @@ typedef enum {
 } amspipe_status_t;
 
 
+// ===== AMSPipe::Error ==========================================================================================================
+
+typedef struct {
+   amspipe_status_t status;
+   char* method;
+   char* argument;
+   char* message;
+} amspipe_error_t;
+void delete_amspipe_error(amspipe_error_t** error);
+
+
 // ===== AMSPipe::Message ========================================================================================================
 
 typedef struct {
@@ -82,9 +93,9 @@ void delete_amscallpipe(amscallpipe_t* cp);
 
 void amscallpipe_receive(amscallpipe_t cp, amspipe_message_t* message);
 
-void amscallpipe_extract_Hello(amscallpipe_t cp, amspipe_message_t message, int64_t* version);
+amspipe_error_t* amscallpipe_extract_Hello(amscallpipe_t cp, amspipe_message_t message, int64_t* version);
 
-void amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message,
+amspipe_error_t* amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message,
    int64_t* numAtoms,
    char***  atomSymbols,
    double** coords,
@@ -93,18 +104,18 @@ void amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message,
    double*  totalCharge
 );
 
-void amscallpipe_extract_SetCoords(amscallpipe_t cp, amspipe_message_t message, double* coords);
+amspipe_error_t* amscallpipe_extract_SetCoords(amscallpipe_t cp, amspipe_message_t message, double* coords);
 
-void amscallpipe_extract_SetLattice(amscallpipe_t cp, amspipe_message_t message,
+amspipe_error_t* amscallpipe_extract_SetLattice(amscallpipe_t cp, amspipe_message_t message,
                                     int64_t* numLatVecs, double** latticeVectors);
 
-void amscallpipe_extract_Solve(amscallpipe_t cp, amspipe_message_t message,
+amspipe_error_t* amscallpipe_extract_Solve(amscallpipe_t cp, amspipe_message_t message,
    amspipe_solverequest_t* request,
    bool* keepResults,
    char** prevTitle
 );
 
-void amscallpipe_extract_DeleteResults(amscallpipe_t cp, amspipe_message_t message, char** title);
+amspipe_error_t* amscallpipe_extract_DeleteResults(amscallpipe_t cp, amspipe_message_t message, char** title);
 
 
 // ===== AMSReplyPipe ============================================================================================================

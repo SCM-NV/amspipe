@@ -36,6 +36,7 @@ int main() {
 
    while (true) {
       auto msg = call_pipe.receive();
+      //std::cout << "Method called: " << msg << std::endl;
 
       try {
          if (msg.name == "Exit") {
