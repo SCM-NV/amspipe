@@ -129,19 +129,18 @@ void amscallpipe_receive(amscallpipe_t cp, amspipe_message_t* message) {
 }
 
 
-amspipe_error_t* amscallpipe_extract_Hello(amscallpipe_t cp, amspipe_message_t message, int64_t* version) {
+void amscallpipe_extract_Hello(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error, int64_t* version) {
    try {
       const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
       AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
       self->extract_Hello(*msg_p, *version);
    } catch (const AMSPipe::Error& exc) {
-      return new_amspipe_error_from_exception(exc);
+      *error = new_amspipe_error_from_exception(exc);
    }
-   return nullptr;
 }
 
 
-amspipe_error_t* amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message,
+void amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error,
    int64_t* numAtoms,
    char***  atomSymbols,
    double** coords,
@@ -187,25 +186,23 @@ amspipe_error_t* amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message
 
    } catch (const AMSPipe::Error& exc) {
       // output is already clean in case of error: we cleaned it in the beginning!
-      return new_amspipe_error_from_exception(exc);
+      *error = new_amspipe_error_from_exception(exc);
    }
-   return nullptr;
 }
 
 
-amspipe_error_t* amscallpipe_extract_SetCoords(amscallpipe_t cp, amspipe_message_t message, double* coords) {
+void amscallpipe_extract_SetCoords(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error, double* coords) {
    try {
       const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
       AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
       self->extract_SetCoords(*msg_p, coords);
    } catch (const AMSPipe::Error& exc) {
-      return new_amspipe_error_from_exception(exc);
+      *error = new_amspipe_error_from_exception(exc);
    }
-   return nullptr;
 }
 
 
-amspipe_error_t* amscallpipe_extract_SetLattice(amscallpipe_t cp, amspipe_message_t message,
+void amscallpipe_extract_SetLattice(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error,
    int64_t* numLatVecs,
    double** latticeVectors
 ) {
@@ -228,13 +225,12 @@ amspipe_error_t* amscallpipe_extract_SetLattice(amscallpipe_t cp, amspipe_messag
       // make sure all output is clean if we return an error
       *numLatVecs = 0;
       free(*latticeVectors); *latticeVectors = nullptr;
-      return new_amspipe_error_from_exception(exc);
+      *error = new_amspipe_error_from_exception(exc);
    }
-   return nullptr;
 }
 
 
-amspipe_error_t* amscallpipe_extract_Solve(amscallpipe_t cp, amspipe_message_t message,
+void amscallpipe_extract_Solve(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error,
    amspipe_solverequest_t* request,
    bool* keepResults,
    char** prevTitle
@@ -264,13 +260,12 @@ amspipe_error_t* amscallpipe_extract_Solve(amscallpipe_t cp, amspipe_message_t m
 
    } catch (const AMSPipe::Error& exc) {
       // output is already clean in case of errors: self->extract_Solve was the last thing that could have thrown!
-      return new_amspipe_error_from_exception(exc);
+      *error = new_amspipe_error_from_exception(exc);
    }
-   return nullptr;
 }
 
 
-amspipe_error_t* amscallpipe_extract_DeleteResults(amscallpipe_t cp, amspipe_message_t message, char** title) {
+void amscallpipe_extract_DeleteResults(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error, char** title) {
    try {
       const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
       AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
@@ -283,9 +278,8 @@ amspipe_error_t* amscallpipe_extract_DeleteResults(amscallpipe_t cp, amspipe_mes
       if (!t.empty()) *title = strdup(t.c_str());
    } catch (const AMSPipe::Error& exc) {
       // output is already clean in case of errors: self->extract_DeleteResults was the last thing that could have thrown!
-      return new_amspipe_error_from_exception(exc);
+      *error = new_amspipe_error_from_exception(exc);
    }
-   return nullptr;
 }
 
 

@@ -93,9 +93,9 @@ void delete_amscallpipe(amscallpipe_t* cp);
 
 void amscallpipe_receive(amscallpipe_t cp, amspipe_message_t* message);
 
-amspipe_error_t* amscallpipe_extract_Hello(amscallpipe_t cp, amspipe_message_t message, int64_t* version);
+void amscallpipe_extract_Hello(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error, int64_t* version);
 
-amspipe_error_t* amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message,
+void amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error,
    int64_t* numAtoms,
    char***  atomSymbols,
    double** coords,
@@ -104,18 +104,18 @@ amspipe_error_t* amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message
    double*  totalCharge
 );
 
-amspipe_error_t* amscallpipe_extract_SetCoords(amscallpipe_t cp, amspipe_message_t message, double* coords);
+void amscallpipe_extract_SetCoords(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error, double* coords);
 
-amspipe_error_t* amscallpipe_extract_SetLattice(amscallpipe_t cp, amspipe_message_t message,
+void amscallpipe_extract_SetLattice(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error,
                                     int64_t* numLatVecs, double** latticeVectors);
 
-amspipe_error_t* amscallpipe_extract_Solve(amscallpipe_t cp, amspipe_message_t message,
+void amscallpipe_extract_Solve(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error,
    amspipe_solverequest_t* request,
    bool* keepResults,
    char** prevTitle
 );
 
-amspipe_error_t* amscallpipe_extract_DeleteResults(amscallpipe_t cp, amspipe_message_t message, char** title);
+void amscallpipe_extract_DeleteResults(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error, char** title);
 
 
 // ===== AMSReplyPipe ============================================================================================================

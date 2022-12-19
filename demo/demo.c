@@ -55,20 +55,20 @@ int main() {
 
       } else if (strcmp(msg.name, "Hello") == 0) {
          int64_t version;
-         error = amscallpipe_extract_Hello(call_pipe, msg, &version);
+         amscallpipe_extract_Hello(call_pipe, msg, &error, &version);
          if (!error) {
             amsreplypipe_send_return(reply_pipe, version == 1 ? AMSPIPE_STATUS_SUCCESS : AMSPIPE_STATUS_UNKNOWN_METHOD,
                                                  NULL, NULL, NULL);
          }
 
       } else if (strcmp(msg.name, "SetCoords") == 0) {
-         error = amscallpipe_extract_SetCoords(call_pipe, msg, coords);
+         amscallpipe_extract_SetCoords(call_pipe, msg, &error, coords);
 
       } else if (strcmp(msg.name, "SetLattice") == 0) {
-         error = amscallpipe_extract_SetLattice(call_pipe, msg, &numLatVecs, &latticeVectors);
+         amscallpipe_extract_SetLattice(call_pipe, msg, &error, &numLatVecs, &latticeVectors);
 
       } else if (strcmp(msg.name, "SetSystem") == 0) {
-         error = amscallpipe_extract_SetSystem(call_pipe, msg, &numAtoms, &atomSymbols, &coords,
+         amscallpipe_extract_SetSystem(call_pipe, msg, &error, &numAtoms, &atomSymbols, &coords,
                                                                &numLatVecs, &latticeVectors, &totalCharge);
          if (!error) {
             //printf("Received new system!\n");
@@ -80,7 +80,7 @@ int main() {
          bool keepResults;
          char* prevTitle = NULL;
 
-         error = amscallpipe_extract_Solve(call_pipe, msg, &request, &keepResults, &prevTitle);
+         amscallpipe_extract_Solve(call_pipe, msg, &error, &request, &keepResults, &prevTitle);
          if (!error) {
 
             //printf("Request:\n");
@@ -117,7 +117,7 @@ int main() {
 
       } else if (strcmp(msg.name, "DeleteResults") == 0) {
          char* title;
-         error = amscallpipe_extract_DeleteResults(call_pipe, msg, &title);
+         amscallpipe_extract_DeleteResults(call_pipe, msg, &error, &title);
          if (!error) {
             //printf("DeleteResults title: %s\n", title);
             // We do not keep a cache of results, so we just confirm the deletion and move on ...
