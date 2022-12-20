@@ -18,6 +18,7 @@ double LJ_potential(const std::vector<double>& coords, std::vector<double>& grad
 
 
 int main() {
+   std::cout << "AMSPipe demo: C++" << std::endl;
 
    AMSCallPipe   call_pipe;
    AMSReplyPipe reply_pipe;

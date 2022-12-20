@@ -17,6 +17,7 @@ double LJ_potential(int nAtoms, const double* coords, double* gradients);
 
 
 int main() {
+   printf("AMSPipe demo: C\n");
 
    amscallpipe_t   call_pipe = new_amscallpipe(NULL);
    amsreplypipe_t reply_pipe = new_amsreplypipe(NULL);

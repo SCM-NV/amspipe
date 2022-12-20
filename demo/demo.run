@@ -1,8 +1,8 @@
 #!/bin/sh
 
-#DEMO_LANGUAGE=c
+DEMO_LANGUAGE=${DEMO_LANGUAGE:-cpp}
 
-NSCM=1 $AMSBIN/ams --delete-old-results << EOF
+$AMSBIN/ams -n 1 --delete-old-results << EOF
 
 Task GeometryOptimization
 

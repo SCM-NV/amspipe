@@ -31,6 +31,8 @@ contains
       ! We do not make an attempt to keep track of the cached results in the Fortran language demo.
       ! Just too much effort since there is no dictionary in standard Fortran ...
 
+      print *, "AMSPipe demo: Fortran"
+
       call  call_pipe%New("call_pipe")
       call reply_pipe%New("reply_pipe")
 

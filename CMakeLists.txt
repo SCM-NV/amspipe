@@ -13,6 +13,7 @@ function(enable_warnings target)
    )
 endfunction()
 
+
 # amspipe library
 
 add_library(amspipe)
@@ -45,6 +46,7 @@ enable_warnings(amspipe)
 
 install(TARGETS amspipe FILE_SET HEADERS)
 
+
 # demo application for C++
 
 add_executable(demo_cpp
@@ -60,6 +62,7 @@ enable_warnings(demo_cpp)
 
 target_link_libraries(demo_cpp PRIVATE amspipe)
 
+
 # demo application for C
 
 add_executable(demo_c
@@ -70,14 +73,23 @@ enable_warnings(demo_c)
 
 target_link_libraries(demo_c PRIVATE amspipe)
 
+
 # demo application for Fortran
 
-ENABLE_LANGUAGE(Fortran)
+include(CheckLanguage)
+check_language(Fortran)
+if(CMAKE_Fortran_COMPILER)
+    enable_language(Fortran)
 
-add_executable(demo_F90
-   demo/demo.F90
-)
+    add_executable(demo_F90
+       demo/demo.F90
+    )
 
-enable_warnings(demo_F90)
+   enable_warnings(demo_F90)
 
-target_link_libraries(demo_F90 PRIVATE amspipe)
+   target_link_libraries(demo_F90 PRIVATE amspipe)
+
+else()
+   message(STATUS "No Fortran compiler found: skipping Fortran interface demo")
+endif()
+
