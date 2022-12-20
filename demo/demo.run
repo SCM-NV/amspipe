@@ -38,7 +38,7 @@ System
 End
 
 Engine Pipe
-   WorkerCommand $(pwd)/../build/demo_${DEMO_LANGUAGE}
+   WorkerCommand ${DEBUG_TOOL} $(pwd)/../build/demo_${DEMO_LANGUAGE}
 EndEngine
 
 EOF

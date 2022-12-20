@@ -116,13 +116,14 @@ int main() {
          free(prevTitle);
 
       } else if (strcmp(msg.name, "DeleteResults") == 0) {
-         char* title;
+         char* title = NULL;
          amscallpipe_extract_DeleteResults(call_pipe, msg, &error, &title);
          if (!error) {
             //printf("DeleteResults title: %s\n", title);
             // We do not keep a cache of results, so we just confirm the deletion and move on ...
             amsreplypipe_send_return(reply_pipe, AMSPIPE_STATUS_SUCCESS, NULL, NULL, NULL);
          }
+         free(title);
 
       } else {
          error = malloc(sizeof(amspipe_error_t));
@@ -137,6 +138,11 @@ int main() {
          delete_amspipe_error(&error);
       }
    }
+
+   for (int64_t iat = 0; iat < numAtoms; ++iat) free((atomSymbols)[iat]);
+   free(atomSymbols); atomSymbols = NULL;
+   free(coords); coords = NULL;
+   free(latticeVectors); latticeVectors = NULL;
 
    delete_amscallpipe(&call_pipe);
    delete_amsreplypipe(&reply_pipe);
