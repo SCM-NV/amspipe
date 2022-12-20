@@ -49,8 +49,7 @@ module amspipe
    public :: AMSPIPE_STATUS_UNKNOWN_METHOD
    public :: AMSPIPE_STATUS_UNKNOWN_ARGUMENT
    public :: AMSPIPE_STATUS_INVALID_ARGUMENT
-   !integer, parameter, public :: AMSPipeStatus = kind(AMSPIPE_STATUS_SUCCESS)
-   integer, parameter, public :: AMSPipeStatus = C_INT
+   integer, parameter, public :: AMSPipeStatus = kind(AMSPIPE_STATUS_SUCCESS)
 
 
    ! ==============
@@ -189,6 +188,7 @@ module amspipe
       procedure, public  :: Extract_Hello
       procedure, public  :: Extract_SetSystem
       procedure, public  :: Extract_SetCoords
+      procedure, public  :: Extract_SetLattice
       procedure, public  :: Extract_Solve
       procedure, public  :: Extract_DeleteResults
    end type
@@ -239,6 +239,16 @@ module amspipe
          type(amspipe_message_t), value         :: message ! amspipe_message_t
          type(C_PTR),             intent(inout) :: error   ! amspipe_error_t**
          type(C_PTR),             value         :: coords  ! double*
+      end subroutine
+      subroutine amscallpipe_extract_SetLattice(cp, message, error, numLatVecs, latticeVectors) &
+         bind(C, name="amscallpipe_extract_SetLattice")
+         import
+         implicit none
+         type(amscallpipe_t),     value         :: cp             ! amscallpipe_t
+         type(amspipe_message_t), value         :: message        ! amspipe_message_t
+         type(C_PTR),             intent(inout) :: error          ! amspipe_error_t**
+         integer(C_INT64_T),      intent(out)   :: numLatVecs     ! int64_t*
+         type(C_PTR),             intent(inout) :: latticeVectors ! double**
       end subroutine
       subroutine amscallpipe_extract_Solve(cp, message, error, request, keepResults, prevTitle) &
          bind(C, name="amscallpipe_extract_Solve")
@@ -483,6 +493,32 @@ contains
       type(C_PTR) :: errCptr = C_NULL_PTR
       call amscallpipe_extract_SetCoords(self%cp, message%msg, errCptr, C_LOC(coords(1,1)))
       if (C_F_error(errCptr, error)) return
+
+   end subroutine
+
+
+   subroutine Extract_SetLattice(self, message, error, latticeVectors)
+      class(AMSCallPipe),              intent(in)  :: self
+      type(AMSPipeMessage),            intent(in)  :: message
+      type(AMSPipeError), allocatable, intent(out) :: error
+      real(C_DOUBLE),     allocatable, intent(out) :: latticeVectors(:,:)
+
+      integer(C_INT64_T) :: numLatVecs
+      type(C_PTR) :: errCptr = C_NULL_PTR, latVecsCPtr = C_NULL_PTR
+      real(C_DOUBLE), pointer :: latVecsFptr(:,:) => null()
+
+      call amscallpipe_extract_SetLattice(self%cp, message%msg, errCptr, numLatVecs, latVecsCPtr)
+      if (C_F_error(errCptr, error)) return
+
+      if (C_ASSOCIATED(latVecsCPtr)) then
+         call C_F_pointer(latVecsCPtr, latVecsFptr, [3_C_INT64_T, numLatVecs])
+         latticeVectors = latVecsFptr
+      endif
+
+      ! free memory that the C interface allocated
+      if (C_ASSOCIATED(latVecsCPtr)) then
+         call C_free(latVecsCPtr); latVecsCPtr = C_NULL_PTR
+      endif
 
    end subroutine
 

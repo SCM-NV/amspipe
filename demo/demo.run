@@ -8,6 +8,7 @@ Task GeometryOptimization
 
 GeometryOptimization
    Method FIRE
+   OptimizeLattice True
 End
 
 Properties

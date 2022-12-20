@@ -12,7 +12,6 @@ module amspipe_demo_utils
 
 contains
 
-
    subroutine PrintSystem(atomSymbols, coords, latticeVectors, totalCharge)
       character(*),   intent(in)           :: atomSymbols(:)
       real(C_DOUBLE), intent(in)           :: coords(:,:)
@@ -38,7 +37,6 @@ contains
       print *, "End"
 
    end subroutine
-
 
    real(C_DOUBLE) function LJ_potential(coords, gradients) result(energy)
       real(C_DOUBLE), intent(in)            :: coords(:,:)
@@ -80,7 +78,6 @@ contains
 
    end function
 
-
 end module
 
 
@@ -111,7 +108,7 @@ program amspipe_demo
 
    msgloop: do while (.true.)
       call call_pipe%Receive(msg)
-      print *, "Method called: ", msg%name
+      !print *, "Method called: ", msg%name
 
       if (msg%name == "Exit") then
          exit msgloop
@@ -145,12 +142,13 @@ program amspipe_demo
          call call_pipe%Extract_SetCoords(msg, error, coords)
 
       else if (msg%name == "SetLattice") then
+         call call_pipe%Extract_SetLattice(msg, error, latticeVectors)
 
       else if (msg%name == "SetSystem") then
          call call_pipe%Extract_SetSystem(msg, error, atomSymbols, coords, latticeVectors, totalCharge)
          if (.not.allocated(error)) then
-            print *, "Received new system!"
-            call PrintSystem(atomSymbols, coords, latticeVectors, totalCharge)
+            !print *, "Received new system!"
+            !call PrintSystem(atomSymbols, coords, latticeVectors, totalCharge)
          endif
 
       else if (msg%name == "Solve") then
@@ -165,16 +163,16 @@ program amspipe_demo
          call call_pipe%Extract_Solve(msg, error, request, keepResults, prevTitle)
          if (.not.allocated(error)) then
 
-            print *, "Request:"
-            print *, "   title: ", request%title
-            print *, "   gradients: ", request%gradients
-            print *, "   stressTensor: ", request%stressTensor
-            print *, "   elasticTensor: ", request%elasticTensor
-            print *, "   hessian: ", request%hessian
-            print *, "   dipoleMoment: ", request%dipoleMoment
-            print *, "   dipoleGradients: ", request%dipoleGradients
-            print *, "keepResults: ", keepResults
-            if (allocated(prevTitle)) print *, "prevTitle: ", prevTitle
+            !print *, "Request:"
+            !print *, "   title: ", request%title
+            !print *, "   gradients: ", request%gradients
+            !print *, "   stressTensor: ", request%stressTensor
+            !print *, "   elasticTensor: ", request%elasticTensor
+            !print *, "   hessian: ", request%hessian
+            !print *, "   dipoleMoment: ", request%dipoleMoment
+            !print *, "   dipoleGradients: ", request%dipoleGradients
+            !print *, "keepResults: ", keepResults
+            !if (allocated(prevTitle)) print *, "prevTitle: ", prevTitle
 
             if (request%gradients) allocate(gradients(size(coords,1), size(coords, 2)))
 
@@ -199,7 +197,7 @@ program amspipe_demo
          character(:), allocatable :: title
          call call_pipe%Extract_DeleteResults(msg, error, title)
          if (.not.allocated(error)) then
-            print *, "DeleteResults title: ", title
+            !print *, "DeleteResults title: ", title
             ! We do not keep a cache of results, so we just confirm the deletion and move on ...
             call reply_pipe%Send_return(AMSPIPE_STATUS_SUCCESS, "", "", "")
          endif
