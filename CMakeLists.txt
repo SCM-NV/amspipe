@@ -4,7 +4,7 @@ project(amspipe VERSION 0.1
                 DESCRIPTION "a library that implements the worker side of the AMS pipe protocol"
                 LANGUAGES CXX C)
 
-option(BUILD_SHARED_LIBS "Build shared library (.dll/.so) instead of static ones (.lib/.a)" ON)
+option(BUILD_SHARED_LIBS "Build shared library (.dll/.so) instead of static ones (.lib/.a)" OFF)
 
 function(enable_warnings target)
    target_compile_options(${target} PRIVATE
@@ -15,18 +15,25 @@ endfunction()
 
 # amspipe library
 
-add_library(amspipe
-   src/amspipe.cpp
-   src/amspipe_c.cpp
-   src/ubjson.cpp
-   src/ubjson.hpp
-   include/amspipe.hpp
-   include/amspipe.h
-)
+add_library(amspipe)
 
 target_include_directories(amspipe
    PUBLIC
       include
+)
+
+target_sources(amspipe
+   PRIVATE
+      src/amspipe.cpp
+      src/amspipe_c.cpp
+      src/ubjson.cpp
+      src/ubjson.hpp
+   PUBLIC FILE_SET HEADERS
+   BASE_DIRS include
+   FILES
+      include/amspipe.hpp
+      include/amspipe.h
+      include/amspipe.F90
 )
 
 set_target_properties(amspipe PROPERTIES
@@ -35,6 +42,8 @@ set_target_properties(amspipe PROPERTIES
     CXX_EXTENSIONS NO
 )
 enable_warnings(amspipe)
+
+install(TARGETS amspipe FILE_SET HEADERS)
 
 # demo application for C++
 
