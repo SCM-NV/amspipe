@@ -334,8 +334,8 @@ void amsreplypipe_send_results(amsreplypipe_t rp, const amspipe_results_t* resul
    res.gradients_dim[1] = results->gradients_dim[1];
 
    res.stressTensor = results->stressTensor;
-   res.stressTensor_dim[0] = 0;
-   res.stressTensor_dim[1] = 0;
+   res.stressTensor_dim[0] = results->stressTensor_dim[0];
+   res.stressTensor_dim[1] = results->stressTensor_dim[1];
 
    res.elasticTensor = results->elasticTensor;
    res.elasticTensor_dim[0] = results->elasticTensor_dim[0];
