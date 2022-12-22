@@ -70,19 +70,19 @@ int64_t ubjson::read_int(std::istream& is) {
       int8_t i;
       is.read(reinterpret_cast<char*>(&i), sizeof(i));
       return i;
-   } else if ('U') {
+   } else if (marker == 'U') {
       uint8_t U;
       is.read(reinterpret_cast<char*>(&U), sizeof(U));
       return U;
-   } else if ('I') {
+   } else if (marker == 'I') {
       int16_t I;
       is.read(reinterpret_cast<char*>(&I), sizeof(I));
       return bswap_16(I);
-   } else if ('l') {
+   } else if (marker == 'l') {
       int32_t l;
       is.read(reinterpret_cast<char*>(&l), sizeof(l));
       return bswap_32(l);
-   } else if ('L') {
+   } else if (marker == 'L') {
       int64_t L;
       is.read(reinterpret_cast<char*>(&L), sizeof(L));
       return bswap_64(L);
@@ -99,7 +99,7 @@ double ubjson::read_real(std::istream& is) {
       float d;
       is.read(reinterpret_cast<char*>(&d), sizeof(d));
       return bswap_32f(d);
-   } else if ('D') {
+   } else if (marker == 'D') {
       double D;
       is.read(reinterpret_cast<char*>(&D), sizeof(D));
       return bswap_64f(D);
