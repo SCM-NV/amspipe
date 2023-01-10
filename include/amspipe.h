@@ -101,7 +101,11 @@ void amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message, 
    double** coords,
    int64_t* numLatVecs,
    double** latticeVectors,
-   double*  totalCharge
+   double*  totalCharge,
+   int64_t*  numBonds,
+   int64_t** bonds,
+   double**  bondOrders,
+   char***   atomicInfo
 );
 
 void amscallpipe_extract_SetCoords(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error, double* coords);

@@ -23,10 +23,13 @@ contains
       type(AMSPipeError), allocatable :: error
 
       ! Variables holding our current system:
-      character(:),   allocatable :: atomSymbols(:)
-      real(C_DOUBLE), allocatable :: coords(:,:)
-      real(C_DOUBLE), allocatable :: latticeVectors(:,:)
-      real(C_DOUBLE)              :: totalCharge = 0.0
+      character(:),       allocatable :: atomSymbols(:)
+      real(C_DOUBLE),     allocatable :: coords(:,:)
+      real(C_DOUBLE),     allocatable :: latticeVectors(:,:)
+      real(C_DOUBLE)                  :: totalCharge = 0.0
+      integer(C_INT64_T), allocatable :: bonds(:,:)
+      real(C_DOUBLE),     allocatable :: bondOrders(:)
+      character(:),       allocatable :: atomicInfo(:)
 
       ! We do not make an attempt to keep track of the cached results in the Fortran language demo.
       ! Just too much effort since there is no dictionary in standard Fortran ...
@@ -75,10 +78,11 @@ contains
             call call_pipe%Extract_SetLattice(msg, error, latticeVectors)
 
          else if (msg%name == "SetSystem") then
-            call call_pipe%Extract_SetSystem(msg, error, atomSymbols, coords, latticeVectors, totalCharge)
+            call call_pipe%Extract_SetSystem(msg, error, atomSymbols, coords, latticeVectors, totalCharge, &
+                                                         bonds, bondOrders, atomicInfo)
             if (.not.allocated(error)) then
                !print *, "Received new system!"
-               !call PrintSystem(atomSymbols, coords, latticeVectors, totalCharge)
+               !call PrintSystem(atomSymbols, coords, latticeVectors, totalCharge, bonds, bondOrders, atomicInfo)
             endif
 
          else if (msg%name == "Solve") then
@@ -152,20 +156,34 @@ contains
    end subroutine
 
 
-   subroutine PrintSystem(atomSymbols, coords, latticeVectors, totalCharge)
-      character(*),   intent(in)           :: atomSymbols(:)
-      real(C_DOUBLE), intent(in)           :: coords(:,:)
-      real(C_DOUBLE), intent(in), optional :: latticeVectors(:,:)
-      real(C_DOUBLE), intent(in)           :: totalCharge
+   subroutine PrintSystem(atomSymbols, coords, latticeVectors, totalCharge, bonds, bondOrders, atomicInfo)
+      character(*),       intent(in)           :: atomSymbols(:)
+      real(C_DOUBLE),     intent(in)           :: coords(:,:)
+      real(C_DOUBLE),     intent(in), optional :: latticeVectors(:,:)
+      real(C_DOUBLE),     intent(in)           :: totalCharge
+      integer(C_INT64_T), intent(in), optional :: bonds(:,:)
+      real(C_DOUBLE),     intent(in), optional :: bondOrders(:)
+      character(*),       intent(in), optional :: atomicInfo(:)
 
-      integer(C_INT64_T) :: iAtom, iLatVec
+      integer(C_INT64_T) :: iAtom, iLatVec, iBond
 
       print *, "System"
       print *, "   Atoms [Bohr]"
       do iAtom = 1, size(atomSymbols)
-         print *, "      ", atomSymbols(iAtom), coords(:,iAtom)
+         if (present(atomicInfo)) then
+            print *, "      ", atomSymbols(iAtom), coords(:,iAtom), "   ", atomicInfo(iAtom)
+         else
+            print *, "      ", atomSymbols(iAtom), coords(:,iAtom)
+         endif
       enddo
       print *, "   End"
+      if (present(bondOrders)) then
+         print *, "   BondOrders"
+         do iBond = 1, size(bondOrders)
+            print *, "      ", bonds(1,iBond), bonds(2,iBond), bondOrders(iBond)
+         enddo
+         print *, "   End"
+      endif
       if (totalCharge /= 0.0) print *, "   Charge ", totalCharge
       if (present(latticeVectors)) then
          print *, "   Lattice [Bohr]"

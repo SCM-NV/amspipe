@@ -141,12 +141,16 @@ void amscallpipe_extract_Hello(amscallpipe_t cp, amspipe_message_t message, amsp
 
 
 void amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error,
-   int64_t* numAtoms,
-   char***  atomSymbols,
-   double** coords,
-   int64_t* numLatVecs,
-   double** latticeVectors,
-   double*  totalCharge
+   int64_t*  numAtoms,
+   char***   atomSymbols,
+   double**  coords,
+   int64_t*  numLatVecs,
+   double**  latticeVectors,
+   double*   totalCharge,
+   int64_t*  numBonds,
+   int64_t** bonds,
+   double**  bondOrders,
+   char***   atomicInfo
 ) {
    try {
       const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
@@ -159,15 +163,25 @@ void amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message, 
       }
       free(*coords); *coords = nullptr;
       free(*latticeVectors); *latticeVectors = nullptr;
-      *numAtoms = 0;
       *numLatVecs = 0;
       *totalCharge = 0.0;
+      *numBonds = 0;
+      free(*bonds); *bonds = nullptr;
+      free(*bondOrders); *bondOrders = nullptr;
+      if (*atomicInfo) {
+         for (int64_t iat = 0; iat < *numAtoms; ++iat) free((*atomicInfo)[iat]);
+         free(*atomicInfo); *atomicInfo = nullptr;
+      }
+      *numAtoms = 0;
 
       // Read message into std::vectors:
       std::vector<std::string> atSyms;
       std::vector<double>      crds;
       std::vector<double>      latVecs;
-      self->extract_SetSystem(*msg_p, atSyms, crds, latVecs, *totalCharge);
+      std::vector<int64_t>     bnds;
+      std::vector<double>      bndOrds;
+      std::vector<std::string> atInf;
+      self->extract_SetSystem(*msg_p, atSyms, crds, latVecs, *totalCharge, bnds, bndOrds, atInf);
 
       // Write data to freshly malloc'd output arrays:
 
@@ -182,6 +196,25 @@ void amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message, 
       if (*numLatVecs > 0) {
          *latticeVectors = static_cast<double*>(malloc(latVecs.size()*sizeof(double)));
          for (size_t i = 0; i < latVecs.size(); ++i) (*latticeVectors)[i] = latVecs[i];
+      }
+
+      *numBonds = bndOrds.size();
+      if (*numBonds > 0) {
+         *bonds = static_cast<int64_t*>(malloc(2*(*numBonds)*sizeof(int64_t)));
+         for (size_t i = 0; i < 2*(*numBonds); ++i) (*bonds)[i] = bnds[i];
+         *bondOrders = static_cast<double*>(malloc(*numBonds*sizeof(double)));
+         for (size_t i = 0; i < *numBonds; ++i) (*bondOrders)[i] = bndOrds[i];
+      }
+
+      if (!atInf.empty()) {
+         *atomicInfo = static_cast<char**>(malloc(atInf.size()*sizeof(char*)));
+         for (size_t i = 0; i < atInf.size(); ++i) {
+            if (atInf[i].empty()) {
+               (*atomicInfo)[i] = nullptr;
+            } else {
+               (*atomicInfo)[i] = strdup(atInf[i].c_str());
+            }
+         }
       }
 
    } catch (const AMSPipe::Error& exc) {

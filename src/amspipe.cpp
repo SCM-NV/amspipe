@@ -67,7 +67,10 @@ void AMSCallPipe::extract_SetSystem(AMSPipe::Message& msg,
    std::vector<std::string>& atomSymbols,
    std::vector<double>& coords,
    std::vector<double>& latticeVectors,
-   double& totalCharge
+   double& totalCharge,
+   std::vector<int64_t>& bonds,
+   std::vector<double>& bondOrders,
+   std::vector<std::string>& atomicInfo
 ) const {
    if (msg.name != "SetSystem") {
       throw AMSPipe::Error(AMSPipe::Status::logic_error, "SetSystem", "",
@@ -78,34 +81,52 @@ void AMSCallPipe::extract_SetSystem(AMSPipe::Message& msg,
    coords.clear();
    latticeVectors.clear();
    totalCharge = 0.0;
+   bonds.clear();
+   bondOrders.clear();
+   atomicInfo.clear();
 
    std::vector<int64_t> atomSymbols_dim = {-1};
    std::vector<int64_t> coords_dim = {-1,-1};
    std::vector<int64_t> latticeVectors_dim = {-1,-1};
+   std::vector<int64_t> bonds_dim = {2,0};
+   std::vector<int64_t> bondOrders_dim = {0};
+   std::vector<int64_t> atomicInfo_dim = {0};
 
    while (ubjson::peek(msg.payload) != '}'){
       auto argument = ubjson::read_key(msg.payload);
 
       if (argument == "atomSymbols") {
          atomSymbols = ubjson::read_string_array(msg.payload);
-
       } else if (argument == "atomSymbols_dim_") {
          atomSymbols_dim = ubjson::read_int_array(msg.payload);
 
       } else if (argument == "coords") {
          coords = ubjson::read_real_array(msg.payload);
-
       } else if (argument == "coords_dim_") {
          coords_dim = ubjson::read_int_array(msg.payload);
 
       } else if (argument == "latticeVectors") {
          latticeVectors = ubjson::read_real_array(msg.payload);
-
       } else if (argument == "latticeVectors_dim_") {
          latticeVectors_dim = ubjson::read_int_array(msg.payload);
 
       } else if (argument == "totalCharge") {
          totalCharge = ubjson::read_real(msg.payload);
+
+      } else if (argument == "bonds") {
+         bonds = ubjson::read_int_array(msg.payload);
+      } else if (argument == "bonds_dim_") {
+         bonds_dim = ubjson::read_int_array(msg.payload);
+
+      } else if (argument == "bondOrders") {
+         bondOrders = ubjson::read_real_array(msg.payload);
+      } else if (argument == "bondOrders_dim_") {
+         bondOrders_dim = ubjson::read_int_array(msg.payload);
+
+      } else if (argument == "atomicInfo") {
+         atomicInfo = ubjson::read_string_array(msg.payload);
+      } else if (argument == "atomicInfo_dim_") {
+         atomicInfo_dim = ubjson::read_int_array(msg.payload);
 
       } else {
          throw AMSPipe::Error(AMSPipe::Status::unknown_argument, "SetSystem", argument,
@@ -137,6 +158,34 @@ void AMSCallPipe::extract_SetSystem(AMSPipe::Message& msg,
    if (latticeVectors.size() != 0 && latticeVectors.size() != 3 && latticeVectors.size() != 6 && latticeVectors.size() != 9) {
       throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetSystem", "latticeVectors",
                            "unexpected size of latticeVectors in SetSystem message");
+   }
+   if (bonds_dim.size() != 2 || bonds_dim[0] != 2 || bonds_dim[1] < 0) {
+      throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetSystem", "bonds_dim_",
+                           "unexpected bonds_dim_ in SetSystem message: should be 2 x nBonds");
+   }
+   if (bonds_dim[0]*bonds_dim[1] != bonds.size()) {
+      throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetSystem", "bonds",
+                           "size of bonds is inconsistent with bonds_dim_ in SetSystem message");
+   }
+   if (bondOrders_dim.size() != 1 || bondOrders_dim[0] < 0) {
+      throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetSystem", "bondOrders_dim_",
+                           "unexpected bondOrders_dim_ in SetSystem message");
+   }
+   if (bonds.size() != 2*bondOrders.size()) {
+      throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetSystem", "bondOrders",
+                           "size of bondOrders is inconsistent with size of bonds in SetSystem message");
+   }
+   if (bondOrders_dim[0] != bondOrders.size()) {
+      throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetSystem", "bondOrders",
+                           "size of bondOrders is inconsistent with bondOrders_dim_ in SetSystem message");
+   }
+   if (atomicInfo_dim.size() != 1) {
+      throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetSystem", "atomicInfo_dim_",
+                           "unexpected atomicInfo_dim_ in SetSystem message");
+   }
+   if (atomicInfo_dim[0] > 0 && (atomicInfo_dim[0] != atomSymbols.size() || atomicInfo_dim[0] != atomicInfo.size())) {
+      throw AMSPipe::Error(AMSPipe::Status::invalid_argument, "SetSystem", "atomicInfo",
+                           "size of atomicInfo is inconsistent with number of atoms in SetSystem message");
    }
 }
 

@@ -11,7 +11,11 @@ void print_system(
    const double* coords,
    int64_t       numLatVecs,
    const double* latticeVectors,
-   double        totalCharge
+   double        totalCharge,
+   int64_t       numBonds,
+   int64_t*      bonds,
+   double*       bondOrders,
+   char**        atomicInfo
 );
 double LJ_potential(int nAtoms, const double* coords, double* gradients);
 
@@ -24,12 +28,16 @@ int main() {
    amspipe_message_t     msg = new_amspipe_message();
 
    // Variables holding our current system:
-   int64_t numAtoms       = 0;
-   char**  atomSymbols    = NULL;
-   double* coords         = NULL;
-   int64_t numLatVecs     = 0;
-   double* latticeVectors = NULL;
-   double  totalCharge    = 0.0;
+   int64_t  numAtoms       = 0;
+   char**   atomSymbols    = NULL;
+   double*  coords         = NULL;
+   int64_t  numLatVecs     = 0;
+   double*  latticeVectors = NULL;
+   double   totalCharge    = 0.0;
+   int64_t  numBonds       = 0;
+   int64_t* bonds          = NULL;
+   double*  bondOrders     = NULL;
+   char**   atomicInfo     = NULL;
 
    // We do not make an attempt to keep track of the cached results in the C language demo.
    // Just too much effort since there is no dictionary in the C standard library ...
@@ -70,10 +78,12 @@ int main() {
 
       } else if (strcmp(msg.name, "SetSystem") == 0) {
          amscallpipe_extract_SetSystem(call_pipe, msg, &error, &numAtoms, &atomSymbols, &coords,
-                                                               &numLatVecs, &latticeVectors, &totalCharge);
+                                                               &numLatVecs, &latticeVectors, &totalCharge,
+                                                               &numBonds, &bonds, &bondOrders, &atomicInfo);
          if (!error) {
             //printf("Received new system!\n");
-            //print_system(numAtoms, atomSymbols, coords, numLatVecs, latticeVectors, totalCharge);
+            //print_system(numAtoms, atomSymbols, coords, numLatVecs, latticeVectors, totalCharge,
+            //             numBonds, bonds, bondOrders, atomicInfo);
          }
 
       } else if (strcmp(msg.name, "Solve") == 0) {
@@ -144,6 +154,10 @@ int main() {
    free(atomSymbols); atomSymbols = NULL;
    free(coords); coords = NULL;
    free(latticeVectors); latticeVectors = NULL;
+   free(bonds); bonds = NULL;
+   free(bondOrders); bondOrders = NULL;
+   for (int64_t iat = 0; iat < numAtoms; ++iat) free((atomicInfo)[iat]);
+   free(atomicInfo); atomicInfo = NULL;
 
    delete_amscallpipe(&call_pipe);
    delete_amsreplypipe(&reply_pipe);
@@ -158,7 +172,11 @@ void print_system(
    const double* coords,
    int64_t       numLatVecs,
    const double* latticeVectors,
-   double        totalCharge
+   double        totalCharge,
+   int64_t       numBonds,
+   int64_t*      bonds,
+   double*       bondOrders,
+   char**        atomicInfo
 ) {
    printf("System\n");
    printf("   Atoms [Bohr]\n");
@@ -166,9 +184,17 @@ void print_system(
       printf("      %s", atomSymbols[iat]);
       for (int xyz = 0; xyz < 3; ++xyz)
          printf("   %f",coords[3*iat+xyz]);
+      if (atomicInfo && atomicInfo[iat])
+         printf("   %s",atomicInfo[iat]);
       printf("\n");
    }
    printf("   End\n");
+   if (numBonds > 0) {
+      printf("   BondOrders\n");
+      for (int64_t ibnd = 0; ibnd < numBonds; ++ibnd)
+         printf("      %li %li %f\n", bonds[2*ibnd], bonds[2*ibnd+1], bondOrders[ibnd]);
+      printf("   End\n");
+   }
    if (totalCharge != 0.0) {
       printf("   Charge %f\n", totalCharge);
    }

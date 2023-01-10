@@ -12,7 +12,10 @@ void print_system(
    const std::vector<std::string>& atomSymbols,
    const std::vector<double>&      coords,
    const std::vector<double>&      latticeVectors,
-   double                          totalCharge
+   double                          totalCharge,
+   std::vector<int64_t>&           bonds,
+   std::vector<double>&            bondOrders,
+   std::vector<std::string>&       atomicInfo
 );
 double LJ_potential(const std::vector<double>& coords, std::vector<double>& gradients);
 
@@ -28,6 +31,9 @@ int main() {
    std::vector<double>      coords;
    std::vector<double>      latticeVectors;
    double                   totalCharge = 0.0;
+   std::vector<int64_t>     bonds;
+   std::vector<double>      bondOrders;
+   std::vector<std::string> atomicInfo;
 
    // Cache of results we have kept:
    std::set<std::string> keptResults; // For this demo we just keep their titles and no actual data ...
@@ -65,10 +71,10 @@ int main() {
             call_pipe.extract_SetLattice(msg, latticeVectors);
 
          } else if (msg.name == "SetSystem") {
-            call_pipe.extract_SetSystem(msg, atomSymbols, coords, latticeVectors, totalCharge);
+            call_pipe.extract_SetSystem(msg, atomSymbols, coords, latticeVectors, totalCharge, bonds, bondOrders, atomicInfo);
 
             //std::cout << "Received new system!" << std::endl;
-            //print_system(atomSymbols, coords, latticeVectors, totalCharge);
+            //print_system(atomSymbols, coords, latticeVectors, totalCharge, bonds, bondOrders, atomicInfo);
 
          } else if (msg.name == "Solve") {
             AMSPipe::SolveRequest request;
@@ -150,7 +156,10 @@ void print_system(
    const std::vector<std::string>& atomSymbols,
    const std::vector<double>&      coords,
    const std::vector<double>&      latticeVectors,
-   double                          totalCharge
+   double                          totalCharge,
+   std::vector<int64_t>&           bonds,
+   std::vector<double>&            bondOrders,
+   std::vector<std::string>&       atomicInfo
 ) {
    std::cout << "System" << std::endl;
    std::cout << "   Atoms [Bohr]" << std::endl;
@@ -158,9 +167,17 @@ void print_system(
       std::cout << "      " << atomSymbols[iat];
       for (int xyz = 0; xyz < 3; ++xyz)
          std::cout << "   " << coords[3*iat+xyz];
+      if (!atomicInfo.empty())
+         std::cout << "   " << atomicInfo[iat];
       std::cout << std::endl;
    }
    std::cout << "   End" << std::endl;
+   if (!bondOrders.empty()) {
+      std::cout << "   BondOrders" << std::endl;
+      for (size_t ibnd = 0; ibnd < bondOrders.size(); ++ibnd)
+         std::cout << "      " << bonds[2*ibnd] << " " << bonds[2*ibnd+1] << " " << bondOrders[ibnd] << std::endl;
+      std::cout << "   End" << std::endl;
+   }
    if (totalCharge != 0.0) {
       std::cout << "   Charge " << totalCharge << std::endl;
    }

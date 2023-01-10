@@ -90,7 +90,10 @@ class AMSCallPipe {
          std::vector<std::string>& atomSymbols,
          std::vector<double>& coords,
          std::vector<double>& latticeVectors,
-         double& totalCharge
+         double& totalCharge,
+         std::vector<int64_t>& bonds,
+         std::vector<double>& bondOrders,
+         std::vector<std::string>& atomicInfo
       ) const;
 
       void extract_SetCoords(AMSPipe::Message& msg, double* coords) const;

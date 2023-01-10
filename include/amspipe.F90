@@ -218,7 +218,8 @@ module amspipe
          integer(C_INT64_T),      intent(out)   :: version ! int64_t*
       end subroutine
       subroutine amscallpipe_extract_SetSystem(cp, message, error, numAtoms, atomSymbols, &
-                                               coords, numLatVecs, latticeVectors, totalCharge) &
+                                               coords, numLatVecs, latticeVectors, totalCharge, &
+                                               numBonds, bonds, bondOrders, atomicInfo) &
          bind(C, name="amscallpipe_extract_SetSystem")
          import
          implicit none
@@ -231,6 +232,10 @@ module amspipe
          integer(C_INT64_T),      intent(out)   :: numLatVecs     ! int64_t*
          type(C_PTR),             intent(inout) :: latticeVectors ! double**
          real(C_DOUBLE),          intent(out)   :: totalCharge    ! double*
+         integer(C_INT64_T),      intent(out)   :: numBonds       ! int64_t*
+         type(C_PTR),             intent(inout) :: bonds          ! int64_t**
+         type(C_PTR),             intent(inout) :: bondOrders     ! double**
+         type(C_PTR),             intent(inout) :: atomicInfo     ! char***
       end subroutine
       subroutine amscallpipe_extract_SetCoords(cp, message, error, coords) bind(C, name="amscallpipe_extract_SetCoords")
          import
@@ -431,7 +436,8 @@ contains
    end subroutine
 
 
-   subroutine Extract_SetSystem(self, message, error, atomSymbols, coords, latticeVectors, totalCharge)
+   subroutine Extract_SetSystem(self, message, error, atomSymbols, coords, latticeVectors, totalCharge, &
+                                bonds, bondOrders, atomicInfo)
       class(AMSCallPipe),              intent(in)  :: self
       type(AMSPipeMessage),            intent(in)  :: message
       type(AMSPipeError), allocatable, intent(out) :: error
@@ -439,16 +445,24 @@ contains
       real(C_DOUBLE),     allocatable, intent(out) :: coords(:,:)
       real(C_DOUBLE),     allocatable, intent(out) :: latticeVectors(:,:)
       real(C_DOUBLE),                  intent(out) :: totalCharge
+      integer(C_INT64_T), allocatable, intent(out) :: bonds(:,:)
+      real(C_DOUBLE),     allocatable, intent(out) :: bondOrders(:)
+      character(:),       allocatable, intent(out) :: atomicInfo(:)
 
-      integer(C_INT64_T) :: iAtom, numAtoms, numLatVecs
-      type(C_PTR) :: errCptr = C_NULL_PTR, atSymsCptr = C_NULL_PTR, crdsCptr = C_NULL_PTR, latVecsCPtr = C_NULL_PTR
-      type(C_PTR)   , pointer :: atSymsFptr(:)    => null()
-      real(C_DOUBLE), pointer :: crdsFptr(:,:)    => null()
-      real(C_DOUBLE), pointer :: latVecsFptr(:,:) => null()
-      integer(C_SIZE_T) :: symMaxLen
+      integer(C_INT64_T) :: iAtom, numAtoms, numLatVecs, numBonds
+      type(C_PTR) :: errCptr = C_NULL_PTR, atSymsCptr = C_NULL_PTR, crdsCptr = C_NULL_PTR, latVecsCPtr = C_NULL_PTR, &
+                     bndsCptr = C_NULL_PTR, bndOrdsCptr = C_NULL_PTR, atInfCptr = C_NULL_PTR
+      type(C_PTR),        pointer :: atSymsFptr(:)    => null()
+      real(C_DOUBLE),     pointer :: crdsFptr(:,:)    => null()
+      real(C_DOUBLE),     pointer :: latVecsFptr(:,:) => null()
+      integer(C_INT64_T), pointer :: bndsFptr(:,:)    => null()
+      real(C_DOUBLE),     pointer :: bndOrdsFptr(:)   => null()
+      type(C_PTR),        pointer :: atInfFptr(:)     => null()
+      integer(C_SIZE_T) :: symMaxLen, atInfMaxLen
 
       call amscallpipe_extract_SetSystem(self%cp, message%msg, errCptr, numAtoms, atSymsCptr, &
-                                         crdsCptr, numLatVecs, latVecsCPtr, totalCharge)
+                                         crdsCptr, numLatVecs, latVecsCPtr, totalCharge, &
+                                         numBonds, bndsCptr, bndOrdsCptr, atInfCptr)
       if (C_F_error(errCptr, error)) return
 
       call C_F_POINTER(atSymsCptr, atSymsFptr, [numAtoms])
@@ -471,6 +485,32 @@ contains
          latticeVectors = latVecsFptr
       endif
 
+      if (C_ASSOCIATED(bndsCptr)) then
+         call C_F_pointer(bndsCptr, bndsFptr, [2_C_INT64_T, numBonds])
+         bonds = bndsFptr
+      endif
+
+      if (C_ASSOCIATED(bndOrdsCptr)) then
+         call C_F_pointer(bndOrdsCptr, bndOrdsFptr, [numBonds])
+         bondOrders = bndOrdsFptr
+      endif
+
+      if (C_ASSOCIATED(atInfCptr)) then
+         call C_F_POINTER(atInfCptr, atInfFptr, [numAtoms])
+         atInfMaxLen = 0
+         do iAtom = 1, numAtoms
+            if (C_ASSOCIATED(atInfFptr(iAtom))) atInfMaxLen = max(atInfMaxLen, C_strlen(atInfFptr(iAtom)))
+         enddo
+         allocate(character(atInfMaxLen) :: atomicInfo(numAtoms))
+         do iAtom = 1, numAtoms
+            if (C_ASSOCIATED(atInfFptr(iAtom))) then
+               atomicInfo(iAtom) = C_F_string(atInfFptr(iAtom))
+            else
+               atomicInfo(iAtom) = ""
+            endif
+         enddo
+      endif
+
       ! free memory that the C interface allocated
       do iAtom = 1, numAtoms
          call C_free(atSymsFptr(iAtom))
@@ -480,6 +520,8 @@ contains
       if (C_ASSOCIATED(latVecsCPtr)) then
          call C_free(latVecsCPtr); latVecsCPtr = C_NULL_PTR
       endif
+      call C_free(bndsCptr);    bndsCptr    = C_NULL_PTR
+      call C_free(bndOrdsCptr); bndOrdsCptr = C_NULL_PTR
 
    end subroutine
 
