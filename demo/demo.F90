@@ -105,6 +105,7 @@ contains
                !print *, "   hessian: ", request%hessian
                !print *, "   dipoleMoment: ", request%dipoleMoment
                !print *, "   dipoleGradients: ", request%dipoleGradients
+               !print *, "   other: ", request%other
                !print *, "keepResults: ", keepResults
                !if (allocated(prevTitle)) print *, "prevTitle: ", prevTitle
 

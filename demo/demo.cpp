@@ -91,6 +91,7 @@ int main() {
             //std::cout << "   hessian: " << request.hessian  << std::endl;
             //std::cout << "   dipoleMoment: " << request.dipoleMoment  << std::endl;
             //std::cout << "   dipoleGradients: " << request.dipoleGradients  << std::endl;
+            //std::cout << "   other: " << request.other  << std::endl;
             //std::cout << "keepResults: " << keepResults << std::endl;
             //if (!prevTitle.empty()) std::cout << "prevTitle: " << prevTitle << std::endl;
 

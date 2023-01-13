@@ -281,9 +281,6 @@ void AMSCallPipe::extract_Solve(AMSPipe::Message& msg,
             auto field = ubjson::read_key(msg.payload);
             if (field == "title") {
                request.title = ubjson::read_string(msg.payload);
-            } else if (field == "other") {
-               // silently ignore "other" for now
-               ubjson::read_bool(msg.payload);
             } else if (field == "quiet") {
                request.quiet = ubjson::read_bool(msg.payload);
             } else if (field == "gradients") {
@@ -298,6 +295,8 @@ void AMSCallPipe::extract_Solve(AMSPipe::Message& msg,
                request.dipoleMoment = ubjson::read_bool(msg.payload);
             } else if (field == "dipoleGradients") {
                request.dipoleGradients = ubjson::read_bool(msg.payload);
+            } else if (field == "other") {
+               request.other = ubjson::read_bool(msg.payload);
             } else {
                if (ubjson::peek(msg.payload) == 'F') {
                   // The worker MAY raise an unknown argument error if an unknown Boolean is set to False ...

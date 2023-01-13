@@ -102,6 +102,7 @@ int main() {
             //printf("   hessian: %i\n", request.hessian);
             //printf("   dipoleMoment: %i\n", request.dipoleMoment);
             //printf("   dipoleGradients: %i\n", request.dipoleGradients);
+            //printf("   other: %i\n", request.other);
             //printf("keepResults: %i\n", keepResults);
             //if (prevTitle) printf("prevTitle: %s\n", prevTitle);
 

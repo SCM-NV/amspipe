@@ -108,6 +108,7 @@ module amspipe
       integer(C_BOOL_INTKIND) :: hessian         = C_BOOL_FALSE
       integer(C_BOOL_INTKIND) :: dipoleMoment    = C_BOOL_FALSE
       integer(C_BOOL_INTKIND) :: dipoleGradients = C_BOOL_FALSE
+      integer(C_BOOL_INTKIND) :: other           = C_BOOL_FALSE
    end type
    type, public :: AMSPipeSolveRequest
       character(:), allocatable, public :: title
@@ -118,6 +119,7 @@ module amspipe
       logical,                   public :: hessian         = .false.
       logical,                   public :: dipoleMoment    = .false.
       logical,                   public :: dipoleGradients = .false.
+      logical,                   public :: other           = .false.
    end type
    interface
       subroutine delete_amspipe_solverequest(request) bind(C, name="delete_amspipe_solverequest")
@@ -588,6 +590,7 @@ contains
       request%hessian         = C_F_bool(rq%hessian)
       request%dipoleMoment    = C_F_bool(rq%dipoleMoment)
       request%dipoleGradients = C_F_bool(rq%dipoleGradients)
+      request%other           = C_F_bool(rq%other)
       call delete_amspipe_solverequest(rq)
 
       keepResults = C_F_bool(kr)

@@ -288,6 +288,7 @@ void amscallpipe_extract_Solve(amscallpipe_t cp, amspipe_message_t message, amsp
       request->hessian         = rq.hessian;
       request->dipoleMoment    = rq.dipoleMoment;
       request->dipoleGradients = rq.dipoleGradients;
+      request->other           = rq.other;
 
       if (!pT.empty()) *prevTitle = strdup(pT.c_str());
 

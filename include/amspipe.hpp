@@ -52,6 +52,7 @@ namespace AMSPipe {
       bool hessian = false;
       bool dipoleMoment = false;
       bool dipoleGradients = false;
+      bool other = false;
    };
 
    struct Results {

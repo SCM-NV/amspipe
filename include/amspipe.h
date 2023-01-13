@@ -57,6 +57,7 @@ typedef struct {
    bool hessian;
    bool dipoleMoment;
    bool dipoleGradients;
+   bool other;
 } amspipe_solverequest_t;
 amspipe_solverequest_t new_amspipe_solverequest();
 void delete_amspipe_solverequest(amspipe_solverequest_t* request);
