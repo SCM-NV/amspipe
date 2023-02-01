@@ -9,8 +9,13 @@
 // ===== AMSCallPipe =============================================================================================================
 
 AMSCallPipe::AMSCallPipe(const std::string& filename) {
-   pipe.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-   pipe.open(filename, std::ios::in | std::ios::binary);
+   pipe = std::fopen(filename.c_str(), "r");
+   if (!pipe) throw std::runtime_error("Could not open AMSCallPipe: "+filename);
+}
+
+
+AMSCallPipe::~AMSCallPipe() {
+   std::fclose(pipe);
 }
 
 
@@ -19,12 +24,14 @@ AMSPipe::Message AMSCallPipe::receive() {
 
    // Each message starts with its size. Let's extract that from the pipe first:
    int32_t msgsize;
-   pipe.read(reinterpret_cast<char*>(&msgsize), sizeof(msgsize));
+   if (std::fread(&msgsize, sizeof(msgsize), 1, pipe) != 1)
+      throw AMSPipe::Error(AMSPipe::Status::runtime_error, "", "", "Could not read size of incoming message from call pipe");
 
    // Read the entire message from the pipe into a std::stringstream:
    std::string str;
    str.resize(msgsize);
-   pipe.read(&str[0], msgsize);
+   if (std::fread(&str[0], sizeof(str[0]), str.size(), pipe) != str.size())
+      throw AMSPipe::Error(AMSPipe::Status::runtime_error, "", "", "Could not read incoming message from call pipe");
 
    // DEBUG!!!
    //std::cout << "==CALL=================" << std::endl;
@@ -352,8 +359,13 @@ void AMSCallPipe::extract_DeleteResults(AMSPipe::Message& msg, std::string& titl
 // ===== AMSReplyPipe ============================================================================================================
 
 AMSReplyPipe::AMSReplyPipe(const std::string& filename) {
-   pipe.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-   pipe.open(filename, std::ios::out | std::ios::binary);
+   pipe = std::fopen(filename.c_str(), "w");
+   if (!pipe) throw std::runtime_error("Could not open AMSReplyPipe: "+filename);
+}
+
+
+AMSReplyPipe::~AMSReplyPipe() {
+   std::fclose(pipe);
 }
 
 
@@ -429,7 +441,10 @@ void AMSReplyPipe::send(std::stringstream& buf) {
    // DEBUG
 
    int32_t msgsize = tmp.size();
-   pipe.write(reinterpret_cast<const char*>(&msgsize), sizeof(msgsize));
-   pipe.write(&tmp[0], tmp.size());
-   pipe.flush();
+   if (std::fwrite(&msgsize, sizeof(msgsize), 1, pipe) != 1)
+      throw AMSPipe::Error(AMSPipe::Status::runtime_error, "", "", "Could not write size of outgoing message to reply pipe");
+   if (std::fwrite(&tmp[0], sizeof(tmp[0]), tmp.size(), pipe) != tmp.size())
+      throw AMSPipe::Error(AMSPipe::Status::runtime_error, "", "", "Could not write outgoing message to reply pipe");
+   if (std::fflush(pipe) != 0)
+      throw AMSPipe::Error(AMSPipe::Status::runtime_error, "", "", "Could not flush reply pipe");
 }

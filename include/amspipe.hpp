@@ -3,10 +3,11 @@
 #ifndef AMSPIPE_HPP_INCLUDED
 #define AMSPIPE_HPP_INCLUDED
 
-#include <fstream>
 #include <string>
 #include <sstream>
 #include <vector>
+#include <stdexcept>
+#include <cstdio>
 
 
 namespace AMSPipe {
@@ -79,6 +80,7 @@ class AMSCallPipe {
    public:
 
       AMSCallPipe(const std::string& filename="call_pipe");
+      ~AMSCallPipe() noexcept;
 
       // Method to receive a generic message on the call pipe:
       AMSPipe::Message receive();
@@ -110,7 +112,7 @@ class AMSCallPipe {
       void extract_DeleteResults(AMSPipe::Message& msg, std::string& title) const;
 
    private:
-      std::ifstream pipe;
+      std::FILE* pipe;
 
 };
 
@@ -120,6 +122,7 @@ class AMSReplyPipe {
    public:
 
       AMSReplyPipe(const std::string& filename="reply_pipe");
+      ~AMSReplyPipe() noexcept;
 
       // Methods to send specific messages:
 
@@ -133,7 +136,7 @@ class AMSReplyPipe {
       void send_results(const AMSPipe::Results& results);
 
    private:
-      std::ofstream pipe;
+      std::FILE* pipe;
       void send(std::stringstream& buf);
 
 };
