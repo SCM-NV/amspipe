@@ -14,7 +14,7 @@ AMSCallPipe::AMSCallPipe(const std::string& filename) {
 }
 
 
-AMSCallPipe::~AMSCallPipe() {
+AMSCallPipe::~AMSCallPipe() noexcept {
    std::fclose(pipe);
 }
 
@@ -364,7 +364,7 @@ AMSReplyPipe::AMSReplyPipe(const std::string& filename) {
 }
 
 
-AMSReplyPipe::~AMSReplyPipe() {
+AMSReplyPipe::~AMSReplyPipe() noexcept {
    std::fclose(pipe);
 }
 
