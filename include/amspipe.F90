@@ -335,6 +335,16 @@ contains
    function C_F_string(cstr) result(fstr)
       type(C_PTR), intent(in)   :: cstr
       character(:), allocatable :: fstr
+      if (C_associated(cstr)) then
+         fstr = C_F_string_inner(cstr)
+      else
+         fstr = ""
+      endif
+   end function
+   !
+   function C_F_string_inner(cstr) result(fstr)
+      type(C_PTR), intent(in)   :: cstr
+      character(:), allocatable :: fstr
       character(kind=C_CHAR, len=C_strlen(cstr)), pointer :: tmp
       call C_F_POINTER(cstr, tmp)
       fstr = tmp
