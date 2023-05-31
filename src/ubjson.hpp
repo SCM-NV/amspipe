@@ -25,7 +25,9 @@ namespace ubjson {
    char read_char(std::istream& is);
    bool read_bool(std::istream& is);
    int64_t read_int(std::istream& is);
+   int64_t read_int(std::istream& is, char marker);
    double read_real(std::istream& is);
+   double read_real(std::istream& is, char marker);
    std::string read_key(std::istream& is); // like a string, but without preceding S marker
    std::string read_string(std::istream& is);
 

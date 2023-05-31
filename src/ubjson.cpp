@@ -68,9 +68,15 @@ bool ubjson::read_bool(std::istream& is) {
 
 
 int64_t ubjson::read_int(std::istream& is) {
-   // Extracts one integer from the stream
+   // Extracts one integer from the stream after determining its size
    char marker;
    is.read(&marker, sizeof(marker));
+   return ubjson::read_int(is, marker);
+}
+
+
+int64_t ubjson::read_int(std::istream& is, char marker) {
+   // Extracts one integer from the stream given its type marker
    if (marker == 'i') {
       int8_t i;
       is.read(reinterpret_cast<char*>(&i), sizeof(i));
@@ -92,14 +98,21 @@ int64_t ubjson::read_int(std::istream& is) {
       is.read(reinterpret_cast<char*>(&L), sizeof(L));
       return bswap_64(L);
    } else {
-      throw ubjson::Error(std::string("unexpected integer type: ")+marker);
+      throw ubjson::Error(std::string("unexpected integer type: '")+marker);
    }
 }
 
 
 double ubjson::read_real(std::istream& is) {
+   // Extracts one real from the stream after determining its size
    char marker;
    is.read(&marker, sizeof(marker));
+   return ubjson::read_real(is, marker);
+}
+
+
+double ubjson::read_real(std::istream& is, char marker) {
+   // Extracts one real from the stream given its type marker
    if (marker == 'd') {
       float d;
       is.read(reinterpret_cast<char*>(&d), sizeof(d));
@@ -167,14 +180,12 @@ std::vector<int64_t> ubjson::read_int_array(std::istream& is) {
    if (m == '$') {
       // Optimized storage with type and count
       ubjson::verify_marker(is, '$');
-      ubjson::verify_marker(is, 'i'); // TODO: support other integer types here ...
+      auto im = ubjson::read_char(is);
       ubjson::verify_marker(is, '#');
       auto n = ubjson::read_int(is);
       std::vector<int64_t> v(n);
       for (size_t i = 0; i<n; ++i) {
-         int8_t k; // TODO: support other integer types here ...
-         is.read(reinterpret_cast<char*>(&k), sizeof(k));
-         v[i] = static_cast<int64_t>(k);
+         v[i] = ubjson::read_int(is, im);
       }
       return v;
 
