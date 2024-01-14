@@ -20,7 +20,7 @@ void print_system(
 double LJ_potential(int nAtoms, const double* coords, double* gradients);
 
 
-int main() {
+int main(void) {
    printf("AMSPipe demo: C\n");
 
    amscallpipe_t   call_pipe = new_amscallpipe(NULL);

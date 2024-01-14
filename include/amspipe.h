@@ -42,7 +42,7 @@ typedef struct {
    const char* name;
    void* p;
 } amspipe_message_t;
-amspipe_message_t new_amspipe_message();
+amspipe_message_t new_amspipe_message(void);
 void delete_amspipe_message(amspipe_message_t* message);
 
 
@@ -59,7 +59,7 @@ typedef struct {
    bool dipoleGradients;
    bool other;
 } amspipe_solverequest_t;
-amspipe_solverequest_t new_amspipe_solverequest();
+amspipe_solverequest_t new_amspipe_solverequest(void);
 void delete_amspipe_solverequest(amspipe_solverequest_t* request);
 
 
@@ -82,7 +82,7 @@ typedef struct {
    double* dipoleGradients;
    int32_t dipoleGradients_dim[2];
 } amspipe_results_t;
-amspipe_results_t new_amspipe_results();
+amspipe_results_t new_amspipe_results(void);
 void delete_amspipe_results(amspipe_results_t* results);
 
 
