@@ -1,4 +1,4 @@
-module amspipe
+module AMSPipeModule
 
    use, intrinsic :: ISO_C_BINDING
 
@@ -172,20 +172,20 @@ module amspipe
 
 
    ! =============
-   !  AMSCallPipe
+   !  AMSPipe
    ! =============
    !
-   type, bind(C) :: amscallpipe_t
-      type(C_PTR) :: p = C_NULL_PTR ! AMSCallPipe*
+   type, bind(C) :: amspipe_t
+      type(C_PTR) :: p = C_NULL_PTR ! AMSPipe*
    end type
-   type, public :: AMSCallPipe
-      type(amscallpipe_t), private :: cp
+   type, public :: AMSPipe
+      type(amspipe_t), private :: pipe
    contains
-      generic,   public  :: New => NewCallPipe
-      procedure, private :: NewCallPipe
-      generic,   public  :: Delete => DeleteCallPipe
-      procedure, private :: DeleteCallPipe
-      final              :: FinalizeCallPipe
+      generic,   public  :: New => NewAMSPipe
+      procedure, private :: NewAMSPipe
+      generic,   public  :: Delete => DeleteAMSPipe
+      procedure, private :: DeleteAMSPipe
+      final              :: FinalizeAMSPipe
       procedure, public  :: Receive
       procedure, public  :: Extract_Hello
       procedure, public  :: Extract_SetSystem
@@ -193,39 +193,41 @@ module amspipe
       procedure, public  :: Extract_SetLattice
       procedure, public  :: Extract_Solve
       procedure, public  :: Extract_DeleteResults
+      procedure, public  :: Send_return
+      procedure, public  :: Send_results
    end type
    interface
-      type(amscallpipe_t) function new_amscallpipe(filename) bind(C, name="new_amscallpipe")
+      type(amspipe_t) function new_amspipe(call_filename, reply_filename) bind(C, name="new_amspipe")
          import
          implicit none
-         character(C_CHAR), intent(in) :: filename(*)
+         character(C_CHAR), intent(in) :: call_filename(*), reply_filename(*)
       end function
-      subroutine delete_amscallpipe(cp) bind(C, name="delete_amscallpipe")
+      subroutine delete_amspipe(pipe) bind(C, name="delete_amspipe")
          import
          implicit none
-         type(C_PTR), value :: cp ! amscallpipe_t*
+         type(C_PTR), value :: pipe ! amspipe_t*
       end subroutine
-      subroutine amscallpipe_receive(cp, message) bind(C, name="amscallpipe_receive")
+      subroutine amspipe_receive(pipe, message) bind(C, name="amspipe_receive")
          import
          implicit none
-         type(amscallpipe_t), value :: cp      ! amscallpipe_t
-         type(C_PTR),         value :: message ! amspipe_message_t*
+         type(amspipe_t), value :: pipe    ! amspipe_t
+         type(C_PTR),     value :: message ! amspipe_message_t*
       end subroutine
-      subroutine amscallpipe_extract_Hello(cp, message, error, version) bind(C, name="amscallpipe_extract_Hello")
+      subroutine amspipe_extract_Hello(pipe, message, error, version) bind(C, name="amspipe_extract_Hello")
          import
          implicit none
-         type(amscallpipe_t),     value         :: cp      ! amscallpipe_t
+         type(amspipe_t),         value         :: pipe    ! amspipe_t
          type(amspipe_message_t), value         :: message ! amspipe_message_t
          type(C_PTR),             intent(inout) :: error   ! amspipe_error_t**
          integer(C_INT64_T),      intent(out)   :: version ! int64_t*
       end subroutine
-      subroutine amscallpipe_extract_SetSystem(cp, message, error, numAtoms, atomSymbols, &
-                                               coords, numLatVecs, latticeVectors, totalCharge, &
-                                               numBonds, bonds, bondOrders, atomicInfo) &
-         bind(C, name="amscallpipe_extract_SetSystem")
+      subroutine amspipe_extract_SetSystem(pipe, message, error, numAtoms, atomSymbols, &
+                                           coords, numLatVecs, latticeVectors, totalCharge, &
+                                           numBonds, bonds, bondOrders, atomicInfo) &
+         bind(C, name="amspipe_extract_SetSystem")
          import
          implicit none
-         type(amscallpipe_t),     value         :: cp             ! amscallpipe_t
+         type(amspipe_t),         value         :: pipe           ! amspipe_t
          type(amspipe_message_t), value         :: message        ! amspipe_message_t
          type(C_PTR),             intent(inout) :: error          ! amspipe_error_t**
          integer(C_INT64_T),      intent(out)   :: numAtoms       ! int64_t*
@@ -239,88 +241,56 @@ module amspipe
          type(C_PTR),             intent(inout) :: bondOrders     ! double**
          type(C_PTR),             intent(inout) :: atomicInfo     ! char***
       end subroutine
-      subroutine amscallpipe_extract_SetCoords(cp, message, error, coords) bind(C, name="amscallpipe_extract_SetCoords")
+      subroutine amspipe_extract_SetCoords(pipe, message, error, coords) bind(C, name="amspipe_extract_SetCoords")
          import
          implicit none
-         type(amscallpipe_t),     value         :: cp      ! amscallpipe_t
+         type(amspipe_t),         value         :: pipe    ! amspipe_t
          type(amspipe_message_t), value         :: message ! amspipe_message_t
          type(C_PTR),             intent(inout) :: error   ! amspipe_error_t**
          type(C_PTR),             value         :: coords  ! double*
       end subroutine
-      subroutine amscallpipe_extract_SetLattice(cp, message, error, numLatVecs, latticeVectors) &
-         bind(C, name="amscallpipe_extract_SetLattice")
+      subroutine amspipe_extract_SetLattice(pipe, message, error, numLatVecs, latticeVectors) &
+         bind(C, name="amspipe_extract_SetLattice")
          import
          implicit none
-         type(amscallpipe_t),     value         :: cp             ! amscallpipe_t
+         type(amspipe_t),         value         :: pipe           ! amspipe_t
          type(amspipe_message_t), value         :: message        ! amspipe_message_t
          type(C_PTR),             intent(inout) :: error          ! amspipe_error_t**
          integer(C_INT64_T),      intent(out)   :: numLatVecs     ! int64_t*
          type(C_PTR),             intent(inout) :: latticeVectors ! double**
       end subroutine
-      subroutine amscallpipe_extract_Solve(cp, message, error, request, keepResults, prevTitle) &
-         bind(C, name="amscallpipe_extract_Solve")
+      subroutine amspipe_extract_Solve(pipe, message, error, request, keepResults, prevTitle) &
+         bind(C, name="amspipe_extract_Solve")
          import
          implicit none
-         type(amscallpipe_t),          value         :: cp          ! amscallpipe_t
+         type(amspipe_t),              value         :: pipe        ! amspipe_t
          type(amspipe_message_t),      value         :: message     ! amspipe_message_t
          type(C_PTR),                  intent(inout) :: error       ! amspipe_error_t**
          type(amspipe_solverequest_t), intent(out)   :: request     ! amspipe_solverequest_t*
          integer(C_BOOL_INTKIND),      intent(out)   :: keepResults ! bool*
          type(C_PTR),                  intent(inout) :: prevTitle   ! char**
       end subroutine
-      subroutine amscallpipe_extract_DeleteResults(cp, message, error, title) bind(C, name="amscallpipe_extract_DeleteResults")
+      subroutine amspipe_extract_DeleteResults(pipe, message, error, title) bind(C, name="amspipe_extract_DeleteResults")
          import
          implicit none
-         type(amscallpipe_t),     value         :: cp      ! amscallpipe_t
+         type(amspipe_t),         value         :: pipe    ! amspipe_t
          type(amspipe_message_t), value         :: message ! amspipe_message_t
          type(C_PTR),             intent(inout) :: error   ! amspipe_error_t**
          type(C_PTR),             intent(inout) :: title   ! char**
       end subroutine
-   end interface
-
-
-   ! ==============
-   !  AMSReplyPipe
-   ! ==============
-   !
-   type, bind(C) :: amsreplypipe_t
-      type(C_PTR) :: p = C_NULL_PTR ! AMSReplyPipe*
-   end type
-   type, public :: AMSReplyPipe
-      type(amsreplypipe_t), private :: rp
-   contains
-      generic,   public  :: New => NewReplyPipe
-      procedure, private :: NewReplyPipe
-      generic,   public  :: Delete => DeleteReplyPipe
-      procedure, private :: DeleteReplyPipe
-      final              :: FinalizeReplyPipe
-      procedure, public  :: Send_return
-      procedure, public  :: Send_results
-   end type
-   interface
-      type(amsreplypipe_t) function new_amsreplypipe(filename) bind(C, name="new_amsreplypipe")
+      subroutine amspipe_send_return(pipe, status, method, argument, message) bind(C, name="amspipe_send_return")
          import
          implicit none
-         character(C_CHAR), intent(in) :: filename(*)
-      end function
-      subroutine delete_amsreplypipe(rp) bind(C, name="delete_amsreplypipe")
-         import
-         implicit none
-         type(C_PTR), value, intent(in) :: rp ! amsreplypipe_t*
-      end subroutine
-      subroutine amsreplypipe_send_return(rp, status, method, argument, message) bind(C, name="amsreplypipe_send_return")
-         import
-         implicit none
-         type(amsreplypipe_t),   value :: rp
+         type(amspipe_t),        value :: pipe
          integer(AMSPipeStatus), value :: status
          character(C_CHAR), intent(in) :: method(*)
          character(C_CHAR), intent(in) :: argument(*)
          character(C_CHAR), intent(in) :: message(*)
       end subroutine
-      subroutine amsreplypipe_send_results(rp, results) bind(C, name="amsreplypipe_send_results")
+      subroutine amspipe_send_results(pipe, results) bind(C, name="amspipe_send_results")
          import
          implicit none
-         type(amsreplypipe_t),   value :: rp
+         type(amspipe_t),        value :: pipe
          type(amspipe_results_t)       :: results
       end subroutine
    end interface
@@ -404,45 +374,48 @@ contains
    end subroutine
 
 
-! ===== AMSCallPipe ==============================================================================================================
+! ===== AMSPipe ==============================================================================================================
 
 
-   subroutine NewCallPipe(self, filename)
-      class(AMSCallPipe), intent(out) :: self
-      character(*),       intent(in)  :: filename
-      self%cp = new_amscallpipe(filename//C_NULL_CHAR)
+   subroutine NewAMSPipe(self, call_filename, reply_filename)
+      class(AMSPipe), intent(out) :: self
+      character(*),   intent(in)  :: call_filename
+      character(*),   intent(in)  :: reply_filename
+      self%pipe = new_amspipe(call_filename//C_NULL_CHAR, reply_filename//C_NULL_CHAR)
    end subroutine
 
 
-   impure elemental subroutine DeleteCallPipe(self)
-      class(AMSCallPipe), intent(inout), target :: self
-      call delete_amscallpipe(C_LOC(self%cp))
+   impure elemental subroutine DeleteAMSPipe(self)
+      class(AMSPipe), intent(inout), target :: self
+      call delete_amspipe(C_LOC(self%pipe))
    end subroutine
    !
-   impure elemental subroutine FinalizeCallPipe(self)
-      type(AMSCallPipe), intent(inout) :: self
+   impure elemental subroutine FinalizeAMSPipe(self)
+      type(AMSPipe), intent(inout) :: self
       call self%Delete()
    end subroutine
 
 
+! ===== call pipe ==============================================================================================================
+
    subroutine Receive(self, message)
-      class(AMSCallPipe),   intent(in)          :: self
+      class(AMSPipe),       intent(in)          :: self
       type(AMSPipeMessage), intent(out), target :: message
 
-      call amscallpipe_receive(self%cp, C_LOC(message%msg))
+      call amspipe_receive(self%pipe, C_LOC(message%msg))
       message%name = C_F_string(message%msg%name)
 
    end subroutine
 
 
    subroutine Extract_Hello(self, message, error, version)
-      class(AMSCallPipe),              intent(in)  :: self
+      class(AMSPipe),                  intent(in)  :: self
       type(AMSPipeMessage),            intent(in)  :: message
       type(AMSPipeError), allocatable, intent(out) :: error
       integer(C_INT64_T),              intent(out) :: version
 
       type(C_PTR) :: errCptr = C_NULL_PTR
-      call amscallpipe_extract_Hello(self%cp, message%msg, errCptr, version)
+      call amspipe_extract_Hello(self%pipe, message%msg, errCptr, version)
       if (C_F_error(errCptr, error)) return
 
    end subroutine
@@ -450,7 +423,7 @@ contains
 
    subroutine Extract_SetSystem(self, message, error, atomSymbols, coords, latticeVectors, totalCharge, &
                                 bonds, bondOrders, atomicInfo)
-      class(AMSCallPipe),              intent(in)  :: self
+      class(AMSPipe),                  intent(in)  :: self
       type(AMSPipeMessage),            intent(in)  :: message
       type(AMSPipeError), allocatable, intent(out) :: error
       character(:),       allocatable, intent(out) :: atomSymbols(:)
@@ -472,9 +445,9 @@ contains
       type(C_PTR),        pointer :: atInfFptr(:)     => null()
       integer(C_SIZE_T) :: symMaxLen, atInfMaxLen
 
-      call amscallpipe_extract_SetSystem(self%cp, message%msg, errCptr, numAtoms, atSymsCptr, &
-                                         crdsCptr, numLatVecs, latVecsCPtr, totalCharge, &
-                                         numBonds, bndsCptr, bndOrdsCptr, atInfCptr)
+      call amspipe_extract_SetSystem(self%pipe, message%msg, errCptr, numAtoms, atSymsCptr, &
+                                     crdsCptr, numLatVecs, latVecsCPtr, totalCharge, &
+                                     numBonds, bndsCptr, bndOrdsCptr, atInfCptr)
       if (C_F_error(errCptr, error)) return
 
       call C_F_POINTER(atSymsCptr, atSymsFptr, [numAtoms])
@@ -539,20 +512,20 @@ contains
 
 
    subroutine Extract_SetCoords(self, message, error, coords)
-      class(AMSCallPipe),              intent(in)          :: self
+      class(AMSPipe),                  intent(in)          :: self
       type(AMSPipeMessage),            intent(in)          :: message
       type(AMSPipeError), allocatable, intent(out)         :: error
       real(C_DOUBLE), contiguous,      intent(out), target :: coords(:,:)
 
       type(C_PTR) :: errCptr = C_NULL_PTR
-      call amscallpipe_extract_SetCoords(self%cp, message%msg, errCptr, C_LOC(coords(1,1)))
+      call amspipe_extract_SetCoords(self%pipe, message%msg, errCptr, C_LOC(coords(1,1)))
       if (C_F_error(errCptr, error)) return
 
    end subroutine
 
 
    subroutine Extract_SetLattice(self, message, error, latticeVectors)
-      class(AMSCallPipe),              intent(in)  :: self
+      class(AMSPipe),                  intent(in)  :: self
       type(AMSPipeMessage),            intent(in)  :: message
       type(AMSPipeError), allocatable, intent(out) :: error
       real(C_DOUBLE),     allocatable, intent(out) :: latticeVectors(:,:)
@@ -561,7 +534,7 @@ contains
       type(C_PTR) :: errCptr = C_NULL_PTR, latVecsCPtr = C_NULL_PTR
       real(C_DOUBLE), pointer :: latVecsFptr(:,:) => null()
 
-      call amscallpipe_extract_SetLattice(self%cp, message%msg, errCptr, numLatVecs, latVecsCPtr)
+      call amspipe_extract_SetLattice(self%pipe, message%msg, errCptr, numLatVecs, latVecsCPtr)
       if (C_F_error(errCptr, error)) return
 
       if (C_ASSOCIATED(latVecsCPtr)) then
@@ -578,7 +551,7 @@ contains
 
 
    subroutine Extract_Solve(self, message, error, request, keepResults, prevTitle)
-      class(AMSCallPipe),              intent(in)  :: self
+      class(AMSPipe),                  intent(in)  :: self
       type(AMSPipeMessage),            intent(in)  :: message
       type(AMSPipeError), allocatable, intent(out) :: error
       type(AMSPipeSolveRequest),       intent(out) :: request
@@ -589,7 +562,7 @@ contains
       type(C_PTR) :: errCptr = C_NULL_PTR, ptCptr = C_NULL_PTR
       integer(C_BOOL_INTKIND) :: kr
 
-      call amscallpipe_extract_Solve(self%cp, message%msg, errCptr, rq, kr, ptCptr)
+      call amspipe_extract_Solve(self%pipe, message%msg, errCptr, rq, kr, ptCptr)
       if (C_F_error(errCptr, error)) return
 
       request%title           = C_F_string(rq%title)
@@ -614,13 +587,13 @@ contains
 
 
    subroutine Extract_DeleteResults(self, message, error, title)
-      class(AMSCallPipe),              intent(in)  :: self
+      class(AMSPipe),                  intent(in)  :: self
       type(AMSPipeMessage),            intent(in)  :: message
       type(AMSPipeError), allocatable, intent(out) :: error
       character(:),       allocatable, intent(out) :: title
 
       type(C_PTR) :: errCptr = C_NULL_PTR, tCptr = C_NULL_PTR
-      call amscallpipe_extract_DeleteResults(self%cp, message%msg, errCptr, tCptr)
+      call amspipe_extract_DeleteResults(self%pipe, message%msg, errCptr, tCptr)
       if (C_F_error(errCptr, error)) return
 
       title = C_F_string(tCptr)
@@ -629,38 +602,19 @@ contains
    end subroutine
 
 
-! ===== AMSReplyPipe =============================================================================================================
-
-
-   subroutine NewReplyPipe(self, filename)
-      class(AMSReplyPipe), intent(out) :: self
-      character(*),       intent(in)   :: filename
-      self%rp = new_amsreplypipe(filename//C_NULL_CHAR)
-   end subroutine
-
-
-   impure elemental subroutine DeleteReplyPipe(self)
-      class(AMSReplyPipe), intent(inout), target :: self
-      call delete_amsreplypipe(C_LOC(self%rp))
-   end subroutine
-   !
-   impure elemental subroutine FinalizeReplyPipe(self)
-      type(AMSReplyPipe), intent(inout) :: self
-      call self%Delete()
-   end subroutine
-
+! ===== reply pipe =============================================================================================================
 
    subroutine Send_return(self, status, method, argument, message)
-      class(AMSReplyPipe),    intent(in) :: self
+      class(AMSPipe),         intent(in) :: self
       integer(AMSPipeStatus), intent(in) :: status
       character(*),           intent(in) :: method, argument, message
 
-      call amsreplypipe_send_return(self%rp, status, method//C_NULL_CHAR, argument//C_NULL_CHAR, message//C_NULL_CHAR)
+      call amspipe_send_return(self%pipe, status, method//C_NULL_CHAR, argument//C_NULL_CHAR, message//C_NULL_CHAR)
 
    end subroutine
 
    subroutine Send_results(self, results)
-      class(AMSReplyPipe),  intent(in)    :: self
+      class(AMSPipe),       intent(in)    :: self
       type(AMSPipeResults), intent(inout) :: results
 
       type(amspipe_results_t) :: r
@@ -680,7 +634,7 @@ contains
       r%dipoleGradients = results%dipoleGradients
       r%dipoleGradients_dim = results%dipoleGradients_dim
 
-      call amsreplypipe_send_results(self%rp, r)
+      call amspipe_send_results(self%pipe, r)
 
    end subroutine
 

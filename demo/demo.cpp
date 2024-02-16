@@ -23,8 +23,7 @@ double LJ_potential(const std::vector<double>& coords, std::vector<double>& grad
 int main() {
    std::cout << "AMSPipe demo: C++" << std::endl;
 
-   AMSCallPipe   call_pipe;
-   AMSReplyPipe reply_pipe;
+   AMSPipe pipe;
 
    // Variables holding our current system:
    std::vector<std::string> atomSymbols;
@@ -42,7 +41,7 @@ int main() {
    std::optional<AMSPipe::Error> error;
 
    while (true) {
-      auto msg = call_pipe.receive();
+      auto msg = pipe.receive();
       //std::cout << "Method called: " << msg << std::endl;
 
       try {
@@ -55,23 +54,23 @@ int main() {
                continue;
             } else {
                // Non-"Set" method called: return buffered error and clear it.
-               reply_pipe.send_return(error->status, error->method, error->argument, error->what());
+               pipe.send_return(error->status, error->method, error->argument, error->what());
                error.reset();
             }
 
          } else if (msg.name == "Hello") {
             int64_t version;
-            call_pipe.extract_Hello(msg, version);
-            reply_pipe.send_return( version == 1 ? AMSPipe::Status::success : AMSPipe::Status::unknown_version);
+            pipe.extract_Hello(msg, version);
+            pipe.send_return( version == 1 ? AMSPipe::Status::success : AMSPipe::Status::unknown_version);
 
          } else if (msg.name == "SetCoords") {
-            call_pipe.extract_SetCoords(msg, coords.data());
+            pipe.extract_SetCoords(msg, coords.data());
 
          } else if (msg.name == "SetLattice") {
-            call_pipe.extract_SetLattice(msg, latticeVectors);
+            pipe.extract_SetLattice(msg, latticeVectors);
 
          } else if (msg.name == "SetSystem") {
-            call_pipe.extract_SetSystem(msg, atomSymbols, coords, latticeVectors, totalCharge, bonds, bondOrders, atomicInfo);
+            pipe.extract_SetSystem(msg, atomSymbols, coords, latticeVectors, totalCharge, bonds, bondOrders, atomicInfo);
 
             //std::cout << "Received new system!" << std::endl;
             //print_system(atomSymbols, coords, latticeVectors, totalCharge, bonds, bondOrders, atomicInfo);
@@ -81,7 +80,7 @@ int main() {
             bool keepResults;
             std::string prevTitle;
 
-            call_pipe.extract_Solve(msg, request, keepResults, prevTitle);
+            pipe.extract_Solve(msg, request, keepResults, prevTitle);
 
             //std::cout << "Request:" << std::endl;
             //std::cout << "   title: " << request.title << std::endl;
@@ -115,10 +114,10 @@ int main() {
             }
 
             if (true) { // we are so simple that we never fail ...
-               reply_pipe.send_results(results);
-               reply_pipe.send_return(AMSPipe::Status::success);
+               pipe.send_results(results);
+               pipe.send_return(AMSPipe::Status::success);
             } else { // ... but if we did, we'd send a runtime_error as the return code
-               reply_pipe.send_return(AMSPipe::Status::runtime_error, "Solve", "", "error evaluating the potential");
+               pipe.send_return(AMSPipe::Status::runtime_error, "Solve", "", "error evaluating the potential");
                /* or:
                  throw AMSPipe::Error(AMSPipe::Status::runtime_error, "Solve", "", "error evaluating the potential");
                */
@@ -126,14 +125,14 @@ int main() {
 
          } else if (msg.name == "DeleteResults") {
             std::string title;
-            call_pipe.extract_DeleteResults(msg, title);
+            pipe.extract_DeleteResults(msg, title);
             //std::cout << "DeleteResults title: " << title << std::endl;
 
             if (keptResults.erase(title) == 0) {
                throw AMSPipe::Error(AMSPipe::Status::logic_error, "DeleteResults", "title",
                                     "DeleteResults called with title that was never stored");
             }
-            reply_pipe.send_return(AMSPipe::Status::success); // we are so simple that we never fail ...
+            pipe.send_return(AMSPipe::Status::success); // we are so simple that we never fail ...
 
          } else {
             throw AMSPipe::Error(AMSPipe::Status::unknown_method, msg.name, "", "unknown method "+msg.name+" called");
@@ -145,7 +144,7 @@ int main() {
             if (!error) error = exc;
          } else {
             // Exception thrown during non-"Set" method: return error immediately.
-            reply_pipe.send_return(exc.status, exc.method, exc.argument, exc.what());
+            pipe.send_return(exc.status, exc.method, exc.argument, exc.what());
          }
       }
    }

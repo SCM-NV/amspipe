@@ -13,10 +13,9 @@ contains
 
    subroutine amspipe_demo
 
-      use amspipe
+      use AMSPipeModule
 
-      type(AMSCallPipe)    :: call_pipe
-      type(AMSReplyPipe)   :: reply_pipe
+      type(AMSPipe)        :: pipe
       type(AMSPipeMessage) :: msg
 
       ! Variable to store the error until we send the corresponding return message:
@@ -36,11 +35,10 @@ contains
 
       print *, "AMSPipe demo: Fortran"
 
-      call  call_pipe%New("call_pipe")
-      call reply_pipe%New("reply_pipe")
+      call pipe%New("call_pipe", "reply_pipe")
 
       msgloop: do while (.true.)
-         call call_pipe%Receive(msg)
+         call pipe%Receive(msg)
          !print *, "Method called: ", msg%name
 
          if (msg%name == "Exit") then
@@ -53,7 +51,7 @@ contains
                cycle msgloop
             else
                ! Non-"Set" method called: return buffered error and clear it.
-               call reply_pipe%Send_return(error%status, error%method, error%argument, error%message)
+               call pipe%Send_return(error%status, error%method, error%argument, error%message)
                deallocate(error)
             endif
 
@@ -61,25 +59,25 @@ contains
             block
             integer(C_INT64_T) :: version
 
-            call call_pipe%Extract_Hello(msg, error, version)
+            call pipe%Extract_Hello(msg, error, version)
             if (.not.allocated(error)) then
                if (version == 1) then
-                  call reply_pipe%Send_return(AMSPIPE_STATUS_SUCCESS, "", "", "")
+                  call pipe%Send_return(AMSPIPE_STATUS_SUCCESS, "", "", "")
                else
-                  call reply_pipe%Send_return(AMSPIPE_STATUS_UNKNOWN_VERSION, "", "", "")
+                  call pipe%Send_return(AMSPIPE_STATUS_UNKNOWN_VERSION, "", "", "")
                endif
             endif
 
             end block
          else if (msg%name == "SetCoords") then
-            call call_pipe%Extract_SetCoords(msg, error, coords)
+            call pipe%Extract_SetCoords(msg, error, coords)
 
          else if (msg%name == "SetLattice") then
-            call call_pipe%Extract_SetLattice(msg, error, latticeVectors)
+            call pipe%Extract_SetLattice(msg, error, latticeVectors)
 
          else if (msg%name == "SetSystem") then
-            call call_pipe%Extract_SetSystem(msg, error, atomSymbols, coords, latticeVectors, totalCharge, &
-                                                         bonds, bondOrders, atomicInfo)
+            call pipe%Extract_SetSystem(msg, error, atomSymbols, coords, latticeVectors, totalCharge, &
+                                                    bonds, bondOrders, atomicInfo)
             if (.not.allocated(error)) then
                !print *, "Received new system!"
                !call PrintSystem(atomSymbols, coords, latticeVectors, totalCharge, bonds, bondOrders, atomicInfo)
@@ -94,7 +92,7 @@ contains
             type(AMSPipeResults) :: results
             real(C_DOUBLE), allocatable, target :: gradients(:,:)
 
-            call call_pipe%Extract_Solve(msg, error, request, keepResults, prevTitle)
+            call pipe%Extract_Solve(msg, error, request, keepResults, prevTitle)
             if (.not.allocated(error)) then
 
                !print *, "Request:"
@@ -119,10 +117,10 @@ contains
                endif
 
                if (.true.) then
-                  call reply_pipe%Send_results(results)
-                  call reply_pipe%Send_return(AMSPIPE_STATUS_SUCCESS, "", "", "")
+                  call pipe%Send_results(results)
+                  call pipe%Send_return(AMSPIPE_STATUS_SUCCESS, "", "", "")
                else
-                  call reply_pipe%Send_return(AMSPIPE_STATUS_RUNTIME_ERROR, "Solve", "", "error evaluating the potential")
+                  call pipe%Send_return(AMSPIPE_STATUS_RUNTIME_ERROR, "Solve", "", "error evaluating the potential")
                endif
 
             endif
@@ -130,11 +128,11 @@ contains
          else if (msg%name == "DeleteResults") then
             block
             character(:), allocatable :: title
-            call call_pipe%Extract_DeleteResults(msg, error, title)
+            call pipe%Extract_DeleteResults(msg, error, title)
             if (.not.allocated(error)) then
                !print *, "DeleteResults title: ", title
                ! We do not keep a cache of results, so we just confirm the deletion and move on ...
-               call reply_pipe%Send_return(AMSPIPE_STATUS_SUCCESS, "", "", "")
+               call pipe%Send_return(AMSPIPE_STATUS_SUCCESS, "", "", "")
             endif
 
             end block
@@ -149,7 +147,7 @@ contains
 
          if (allocated(error) .and. index(msg%name, "Set") /= 1) then
             ! Error during non-"Set" method: return and clear error immediately.
-            call reply_pipe%Send_return(error%status, error%method, error%argument, error%message)
+            call pipe%Send_return(error%status, error%method, error%argument, error%message)
             deallocate(error)
          endif
       end do msgloop

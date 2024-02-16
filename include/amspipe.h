@@ -86,17 +86,19 @@ amspipe_results_t new_amspipe_results(void);
 void delete_amspipe_results(amspipe_results_t* results);
 
 
-// ===== AMSCallPipe =============================================================================================================
+// ===== AMSPipe =============================================================================================================
 
-typedef struct { void* p; } amscallpipe_t;
-amscallpipe_t new_amscallpipe(const char* filename);
-void delete_amscallpipe(amscallpipe_t* cp);
+typedef struct { void* p; } amspipe_t;
+amspipe_t new_amspipe(const char* call_filename, const char* reply_filename);
+void delete_amspipe(amspipe_t* cp);
 
-void amscallpipe_receive(amscallpipe_t cp, amspipe_message_t* message);
+// ===== call pipe =============================================================================================================
 
-void amscallpipe_extract_Hello(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error, int64_t* version);
+void amspipe_receive(amspipe_t cp, amspipe_message_t* message);
 
-void amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error,
+void amspipe_extract_Hello(amspipe_t cp, amspipe_message_t message, amspipe_error_t** error, int64_t* version);
+
+void amspipe_extract_SetSystem(amspipe_t cp, amspipe_message_t message, amspipe_error_t** error,
    int64_t* numAtoms,
    char***  atomSymbols,
    double** coords,
@@ -109,34 +111,30 @@ void amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message, 
    char***   atomicInfo
 );
 
-void amscallpipe_extract_SetCoords(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error, double* coords);
+void amspipe_extract_SetCoords(amspipe_t cp, amspipe_message_t message, amspipe_error_t** error, double* coords);
 
-void amscallpipe_extract_SetLattice(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error,
-                                    int64_t* numLatVecs, double** latticeVectors);
+void amspipe_extract_SetLattice(amspipe_t cp, amspipe_message_t message, amspipe_error_t** error,
+                                int64_t* numLatVecs, double** latticeVectors);
 
-void amscallpipe_extract_Solve(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error,
+void amspipe_extract_Solve(amspipe_t cp, amspipe_message_t message, amspipe_error_t** error,
    amspipe_solverequest_t* request,
    bool* keepResults,
    char** prevTitle
 );
 
-void amscallpipe_extract_DeleteResults(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error, char** title);
+void amspipe_extract_DeleteResults(amspipe_t cp, amspipe_message_t message, amspipe_error_t** error, char** title);
 
 
-// ===== AMSReplyPipe ============================================================================================================
+// ===== reply pipe ============================================================================================================
 
-typedef struct { void* p; } amsreplypipe_t;
-amsreplypipe_t new_amsreplypipe(const char* filename);
-void delete_amsreplypipe(amsreplypipe_t* cp);
-
-void amsreplypipe_send_return(amsreplypipe_t rp,
+void amspipe_send_return(amspipe_t rp,
    amspipe_status_t status,
    const char* method,
    const char* argument,
    const char* message
 );
 
-void amsreplypipe_send_results(amsreplypipe_t rp, const amspipe_results_t* results);
+void amspipe_send_results(amspipe_t rp, const amspipe_results_t* results);
 
 
 #ifdef __cplusplus

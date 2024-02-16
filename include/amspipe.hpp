@@ -10,7 +10,8 @@
 #include <cstdio>
 
 
-namespace AMSPipe {
+class AMSPipe {
+   public:
 
    enum class Status : int8_t {
       success          = 0,
@@ -72,15 +73,9 @@ namespace AMSPipe {
       double* dipoleGradients = nullptr;
       int32_t dipoleGradients_dim[2] = {0,0};
    };
-};
 
-
-class AMSCallPipe {
-
-   public:
-
-      AMSCallPipe(const std::string& filename="call_pipe");
-      ~AMSCallPipe() noexcept;
+      AMSPipe(const std::string& call_filename="call_pipe", const std::string& reply_filename="reply_pipe");
+      ~AMSPipe() noexcept;
 
       // Method to receive a generic message on the call pipe:
       AMSPipe::Message receive();
@@ -111,19 +106,6 @@ class AMSCallPipe {
 
       void extract_DeleteResults(AMSPipe::Message& msg, std::string& title) const;
 
-   private:
-      std::FILE* pipe;
-
-};
-
-
-class AMSReplyPipe {
-
-   public:
-
-      AMSReplyPipe(const std::string& filename="reply_pipe");
-      ~AMSReplyPipe() noexcept;
-
       // Methods to send specific messages:
 
       void send_return(
@@ -136,7 +118,7 @@ class AMSReplyPipe {
       void send_results(const AMSPipe::Results& results);
 
    private:
-      std::FILE* pipe;
+      std::FILE *call_pipe, *reply_pipe;
       void send(std::stringstream& buf);
 
 };

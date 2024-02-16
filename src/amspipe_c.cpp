@@ -98,28 +98,29 @@ void delete_amspipe_results(amspipe_results_t* results) {
 }
 
 
-// ===== AMSCallPipe =============================================================================================================
+// ===== AMSPipe =============================================================================================================
 
-amscallpipe_t new_amscallpipe(const char* filename) {
-   amscallpipe_t ret;
-   if (filename) {
-      ret.p = new AMSCallPipe(filename);
+amspipe_t new_amspipe(const char* call_filename, const char* reply_filename) {
+   amspipe_t ret;
+   if (call_filename && reply_filename) {
+      ret.p = new AMSPipe(call_filename, reply_filename);
    } else {
-      ret.p = new AMSCallPipe();
+      ret.p = new AMSPipe();
    }
    return ret;
 }
 
 
-void delete_amscallpipe(amscallpipe_t* cp) {
-   AMSCallPipe* self = reinterpret_cast<AMSCallPipe*>(cp->p);
+void delete_amspipe(amspipe_t* rp) {
+   AMSPipe* self = reinterpret_cast<AMSPipe*>(rp->p);
    delete self;
-   cp->p = nullptr;
+   rp->p = nullptr;
 }
 
+// ===== call pipe =============================================================================================================
 
-void amscallpipe_receive(amscallpipe_t cp, amspipe_message_t* message) {
-   AMSCallPipe* self = reinterpret_cast<AMSCallPipe*>(cp.p);
+void amspipe_receive(amspipe_t cp, amspipe_message_t* message) {
+   AMSPipe* self = reinterpret_cast<AMSPipe*>(cp.p);
    AMSPipe::Message* msg_p = message->p
                            ? reinterpret_cast<AMSPipe::Message*>(message->p)
                            : new AMSPipe::Message;
@@ -129,9 +130,9 @@ void amscallpipe_receive(amscallpipe_t cp, amspipe_message_t* message) {
 }
 
 
-void amscallpipe_extract_Hello(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error, int64_t* version) {
+void amspipe_extract_Hello(amspipe_t cp, amspipe_message_t message, amspipe_error_t** error, int64_t* version) {
    try {
-      const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
+      const AMSPipe* self = reinterpret_cast<const AMSPipe*>(cp.p);
       AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
       self->extract_Hello(*msg_p, *version);
    } catch (const AMSPipe::Error& exc) {
@@ -140,7 +141,7 @@ void amscallpipe_extract_Hello(amscallpipe_t cp, amspipe_message_t message, amsp
 }
 
 
-void amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error,
+void amspipe_extract_SetSystem(amspipe_t cp, amspipe_message_t message, amspipe_error_t** error,
    int64_t*  numAtoms,
    char***   atomSymbols,
    double**  coords,
@@ -153,7 +154,7 @@ void amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message, 
    char***   atomicInfo
 ) {
    try {
-      const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
+      const AMSPipe* self = reinterpret_cast<const AMSPipe*>(cp.p);
       AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
 
       // Clean output values:
@@ -224,9 +225,9 @@ void amscallpipe_extract_SetSystem(amscallpipe_t cp, amspipe_message_t message, 
 }
 
 
-void amscallpipe_extract_SetCoords(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error, double* coords) {
+void amspipe_extract_SetCoords(amspipe_t cp, amspipe_message_t message, amspipe_error_t** error, double* coords) {
    try {
-      const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
+      const AMSPipe* self = reinterpret_cast<const AMSPipe*>(cp.p);
       AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
       self->extract_SetCoords(*msg_p, coords);
    } catch (const AMSPipe::Error& exc) {
@@ -235,12 +236,12 @@ void amscallpipe_extract_SetCoords(amscallpipe_t cp, amspipe_message_t message, 
 }
 
 
-void amscallpipe_extract_SetLattice(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error,
+void amspipe_extract_SetLattice(amspipe_t cp, amspipe_message_t message, amspipe_error_t** error,
    int64_t* numLatVecs,
    double** latticeVectors
 ) {
    try {
-      const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
+      const AMSPipe* self = reinterpret_cast<const AMSPipe*>(cp.p);
       AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
 
       // Read message into std::vectors:
@@ -263,13 +264,13 @@ void amscallpipe_extract_SetLattice(amscallpipe_t cp, amspipe_message_t message,
 }
 
 
-void amscallpipe_extract_Solve(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error,
+void amspipe_extract_Solve(amspipe_t cp, amspipe_message_t message, amspipe_error_t** error,
    amspipe_solverequest_t* request,
    bool* keepResults,
    char** prevTitle
 ) {
    try {
-      const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
+      const AMSPipe* self = reinterpret_cast<const AMSPipe*>(cp.p);
       AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
 
       *keepResults = false;
@@ -299,9 +300,9 @@ void amscallpipe_extract_Solve(amscallpipe_t cp, amspipe_message_t message, amsp
 }
 
 
-void amscallpipe_extract_DeleteResults(amscallpipe_t cp, amspipe_message_t message, amspipe_error_t** error, char** title) {
+void amspipe_extract_DeleteResults(amspipe_t cp, amspipe_message_t message, amspipe_error_t** error, char** title) {
    try {
-      const AMSCallPipe* self = reinterpret_cast<const AMSCallPipe*>(cp.p);
+      const AMSPipe* self = reinterpret_cast<const AMSPipe*>(cp.p);
       AMSPipe::Message* msg_p = reinterpret_cast<AMSPipe::Message*>(message.p);
 
       free(*title); *title = nullptr;
@@ -317,33 +318,15 @@ void amscallpipe_extract_DeleteResults(amscallpipe_t cp, amspipe_message_t messa
 }
 
 
-// ===== AMSReplyPipe ============================================================================================================
+// ===== reply pipe ============================================================================================================
 
-amsreplypipe_t new_amsreplypipe(const char* filename) {
-   amsreplypipe_t ret;
-   if (filename) {
-      ret.p = new AMSReplyPipe(filename);
-   } else {
-      ret.p = new AMSReplyPipe();
-   }
-   return ret;
-}
-
-
-void delete_amsreplypipe(amsreplypipe_t* rp) {
-   AMSReplyPipe* self = reinterpret_cast<AMSReplyPipe*>(rp->p);
-   delete self;
-   rp->p = nullptr;
-}
-
-
-void amsreplypipe_send_return(amsreplypipe_t rp,
+void amspipe_send_return(amspipe_t rp,
    amspipe_status_t status,
    const char* method,
    const char* argument,
    const char* message
 ) {
-   AMSReplyPipe* self = reinterpret_cast<AMSReplyPipe*>(rp.p);
+   AMSPipe* self = reinterpret_cast<AMSPipe*>(rp.p);
    self->send_return(
       static_cast<AMSPipe::Status>(status),
       method ? method : "",
@@ -353,8 +336,8 @@ void amsreplypipe_send_return(amsreplypipe_t rp,
 }
 
 
-void amsreplypipe_send_results(amsreplypipe_t rp, const amspipe_results_t* results) {
-   AMSReplyPipe* self = reinterpret_cast<AMSReplyPipe*>(rp.p);
+void amspipe_send_results(amspipe_t rp, const amspipe_results_t* results) {
+   AMSPipe* self = reinterpret_cast<AMSPipe*>(rp.p);
    AMSPipe::Results res;
 
    if (results->numMessages > 0) {

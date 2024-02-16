@@ -23,9 +23,8 @@ double LJ_potential(int nAtoms, const double* coords, double* gradients);
 int main(void) {
    printf("AMSPipe demo: C\n");
 
-   amscallpipe_t   call_pipe = new_amscallpipe(NULL);
-   amsreplypipe_t reply_pipe = new_amsreplypipe(NULL);
-   amspipe_message_t     msg = new_amspipe_message();
+   amspipe_t        pipe = new_amspipe(NULL, NULL);
+   amspipe_message_t msg = new_amspipe_message();
 
    // Variables holding our current system:
    int64_t  numAtoms       = 0;
@@ -46,7 +45,7 @@ int main(void) {
    amspipe_error_t* error = NULL;
 
    while (1) {
-      amscallpipe_receive(call_pipe, &msg);
+      amspipe_receive(pipe, &msg);
       //printf("Method called: %s\n", msg.name);
 
       if (strcmp(msg.name, "Exit") == 0) {
@@ -58,28 +57,28 @@ int main(void) {
             continue;
          } else {
             // Non-"Set" method called: return buffered error and clear it.
-         amsreplypipe_send_return(reply_pipe, error->status, error->method, error->argument, error->message);
+         amspipe_send_return(pipe, error->status, error->method, error->argument, error->message);
          delete_amspipe_error(&error);
          }
 
       } else if (strcmp(msg.name, "Hello") == 0) {
          int64_t version;
-         amscallpipe_extract_Hello(call_pipe, msg, &error, &version);
+         amspipe_extract_Hello(pipe, msg, &error, &version);
          if (!error) {
-            amsreplypipe_send_return(reply_pipe, version == 1 ? AMSPIPE_STATUS_SUCCESS : AMSPIPE_STATUS_UNKNOWN_METHOD,
-                                                 NULL, NULL, NULL);
+            amspipe_send_return(pipe, version == 1 ? AMSPIPE_STATUS_SUCCESS : AMSPIPE_STATUS_UNKNOWN_METHOD,
+                                      NULL, NULL, NULL);
          }
 
       } else if (strcmp(msg.name, "SetCoords") == 0) {
-         amscallpipe_extract_SetCoords(call_pipe, msg, &error, coords);
+         amspipe_extract_SetCoords(pipe, msg, &error, coords);
 
       } else if (strcmp(msg.name, "SetLattice") == 0) {
-         amscallpipe_extract_SetLattice(call_pipe, msg, &error, &numLatVecs, &latticeVectors);
+         amspipe_extract_SetLattice(pipe, msg, &error, &numLatVecs, &latticeVectors);
 
       } else if (strcmp(msg.name, "SetSystem") == 0) {
-         amscallpipe_extract_SetSystem(call_pipe, msg, &error, &numAtoms, &atomSymbols, &coords,
-                                                               &numLatVecs, &latticeVectors, &totalCharge,
-                                                               &numBonds, &bonds, &bondOrders, &atomicInfo);
+         amspipe_extract_SetSystem(pipe, msg, &error, &numAtoms, &atomSymbols, &coords,
+                                                      &numLatVecs, &latticeVectors, &totalCharge,
+                                                      &numBonds, &bonds, &bondOrders, &atomicInfo);
          if (!error) {
             //printf("Received new system!\n");
             //print_system(numAtoms, atomSymbols, coords, numLatVecs, latticeVectors, totalCharge,
@@ -91,7 +90,7 @@ int main(void) {
          bool keepResults;
          char* prevTitle = NULL;
 
-         amscallpipe_extract_Solve(call_pipe, msg, &error, &request, &keepResults, &prevTitle);
+         amspipe_extract_Solve(pipe, msg, &error, &request, &keepResults, &prevTitle);
          if (!error) {
 
             //printf("Request:\n");
@@ -115,11 +114,11 @@ int main(void) {
             results.energy = LJ_potential(numAtoms, coords, results.gradients);
 
             if (true) { // we are so simple that we never fail ...
-               amsreplypipe_send_results(reply_pipe, &results);
-               amsreplypipe_send_return(reply_pipe, AMSPIPE_STATUS_SUCCESS, NULL, NULL, NULL);
+               amspipe_send_results(pipe, &results);
+               amspipe_send_return(pipe, AMSPIPE_STATUS_SUCCESS, NULL, NULL, NULL);
             } else { // ... but if we did, we'd send a runtime_error as the return code
-               amsreplypipe_send_return(reply_pipe, AMSPIPE_STATUS_RUNTIME_ERROR, "Solve",
-                                                    NULL, "error evaluating the potential");
+               amspipe_send_return(pipe, AMSPIPE_STATUS_RUNTIME_ERROR, "Solve",
+                                         NULL, "error evaluating the potential");
             }
             delete_amspipe_results(&results);
 
@@ -129,11 +128,11 @@ int main(void) {
 
       } else if (strcmp(msg.name, "DeleteResults") == 0) {
          char* title = NULL;
-         amscallpipe_extract_DeleteResults(call_pipe, msg, &error, &title);
+         amspipe_extract_DeleteResults(pipe, msg, &error, &title);
          if (!error) {
             //printf("DeleteResults title: %s\n", title);
             // We do not keep a cache of results, so we just confirm the deletion and move on ...
-            amsreplypipe_send_return(reply_pipe, AMSPIPE_STATUS_SUCCESS, NULL, NULL, NULL);
+            amspipe_send_return(pipe, AMSPIPE_STATUS_SUCCESS, NULL, NULL, NULL);
          }
          free(title);
 
@@ -146,7 +145,7 @@ int main(void) {
       }
 
       if (error && strncmp(msg.name, "Set", 3) != 0) { // Error during non-"Set" method: return and clear error immediately.
-         amsreplypipe_send_return(reply_pipe, error->status, error->method, error->argument, error->message);
+         amspipe_send_return(pipe, error->status, error->method, error->argument, error->message);
          delete_amspipe_error(&error);
       }
    }
@@ -160,8 +159,7 @@ int main(void) {
    for (int64_t iat = 0; iat < numAtoms; ++iat) free((atomicInfo)[iat]);
    free(atomicInfo); atomicInfo = NULL;
 
-   delete_amscallpipe(&call_pipe);
-   delete_amsreplypipe(&reply_pipe);
+   delete_amspipe(&pipe);
    delete_amspipe_message(&msg);
    return 0;
 }

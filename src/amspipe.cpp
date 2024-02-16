@@ -6,31 +6,35 @@
 #include "ubjson.hpp"
 
 
-// ===== AMSCallPipe =============================================================================================================
+// ===== AMSPipe =============================================================================================================
 
-AMSCallPipe::AMSCallPipe(const std::string& filename) {
-   pipe = std::fopen(filename.c_str(), "r");
-   if (!pipe) throw std::runtime_error("Could not open AMSCallPipe: "+filename);
+AMSPipe::AMSPipe(const std::string& call_filename, const std::string& reply_filename) {
+   call_pipe = std::fopen(call_filename.c_str(), "r");
+   if (!call_pipe) throw std::runtime_error("Could not open call pipe: "+call_filename);
+   reply_pipe = std::fopen(reply_filename.c_str(), "w");
+   if (!reply_pipe) throw std::runtime_error("Could not open reply pipe: "+reply_filename);
 }
 
 
-AMSCallPipe::~AMSCallPipe() noexcept {
-   std::fclose(pipe);
+AMSPipe::~AMSPipe() noexcept {
+   std::fclose(call_pipe);
+   std::fclose(reply_pipe);
 }
 
+// ===== call pipe =============================================================================================================
 
-AMSPipe::Message AMSCallPipe::receive() {
+AMSPipe::Message AMSPipe::receive() {
    AMSPipe::Message msg;
 
    // Each message starts with its size. Let's extract that from the pipe first:
    int32_t msgsize;
-   if (std::fread(&msgsize, sizeof(msgsize), 1, pipe) != 1)
+   if (std::fread(&msgsize, sizeof(msgsize), 1, call_pipe) != 1)
       throw AMSPipe::Error(AMSPipe::Status::runtime_error, "", "", "Could not read size of incoming message from call pipe");
 
    // Read the entire message from the pipe into a std::stringstream:
    std::string str;
    str.resize(msgsize);
-   if (std::fread(&str[0], sizeof(str[0]), str.size(), pipe) != str.size())
+   if (std::fread(&str[0], sizeof(str[0]), str.size(), call_pipe) != str.size())
       throw AMSPipe::Error(AMSPipe::Status::runtime_error, "", "", "Could not read incoming message from call pipe");
 
    // DEBUG!!!
@@ -53,7 +57,7 @@ AMSPipe::Message AMSCallPipe::receive() {
 }
 
 
-void AMSCallPipe::extract_Hello(AMSPipe::Message& msg, int64_t& version) const {
+void AMSPipe::extract_Hello(AMSPipe::Message& msg, int64_t& version) const {
    if (msg.name != "Hello") {
       throw AMSPipe::Error(AMSPipe::Status::logic_error, "Hello", "",
                            "Hello called on message with name: "+msg.name);
@@ -70,7 +74,7 @@ void AMSCallPipe::extract_Hello(AMSPipe::Message& msg, int64_t& version) const {
 }
 
 
-void AMSCallPipe::extract_SetSystem(AMSPipe::Message& msg,
+void AMSPipe::extract_SetSystem(AMSPipe::Message& msg,
    std::vector<std::string>& atomSymbols,
    std::vector<double>& coords,
    std::vector<double>& latticeVectors,
@@ -197,7 +201,7 @@ void AMSCallPipe::extract_SetSystem(AMSPipe::Message& msg,
 }
 
 
-void AMSCallPipe::extract_SetCoords(AMSPipe::Message& msg, double* coords) const {
+void AMSPipe::extract_SetCoords(AMSPipe::Message& msg, double* coords) const {
    if (msg.name != "SetCoords") {
       throw AMSPipe::Error(AMSPipe::Status::logic_error, "SetCoords", "",
                            "SetCoords called on message with name: "+msg.name);
@@ -232,7 +236,7 @@ void AMSCallPipe::extract_SetCoords(AMSPipe::Message& msg, double* coords) const
 }
 
 
-void AMSCallPipe::extract_SetLattice(AMSPipe::Message& msg, std::vector<double>& vectors) const {
+void AMSPipe::extract_SetLattice(AMSPipe::Message& msg, std::vector<double>& vectors) const {
    if (msg.name != "SetLattice") {
       throw AMSPipe::Error(AMSPipe::Status::logic_error, "SetLattice", "",
                            "SetLattice called on message with name: "+msg.name);
@@ -269,7 +273,7 @@ void AMSCallPipe::extract_SetLattice(AMSPipe::Message& msg, std::vector<double>&
 }
 
 
-void AMSCallPipe::extract_Solve(AMSPipe::Message& msg,
+void AMSPipe::extract_Solve(AMSPipe::Message& msg,
    AMSPipe::SolveRequest& request,
    bool& keepResults,
    std::string& prevTitle
@@ -339,7 +343,7 @@ void AMSCallPipe::extract_Solve(AMSPipe::Message& msg,
 }
 
 
-void AMSCallPipe::extract_DeleteResults(AMSPipe::Message& msg, std::string& title) const {
+void AMSPipe::extract_DeleteResults(AMSPipe::Message& msg, std::string& title) const {
    if (msg.name != "DeleteResults") {
       throw AMSPipe::Error(AMSPipe::Status::logic_error, "DeleteResults", "",
                            "DeleteResults called on message with name: "+msg.name);
@@ -356,20 +360,9 @@ void AMSCallPipe::extract_DeleteResults(AMSPipe::Message& msg, std::string& titl
 }
 
 
-// ===== AMSReplyPipe ============================================================================================================
+// ===== reply pipe ============================================================================================================
 
-AMSReplyPipe::AMSReplyPipe(const std::string& filename) {
-   pipe = std::fopen(filename.c_str(), "w");
-   if (!pipe) throw std::runtime_error("Could not open AMSReplyPipe: "+filename);
-}
-
-
-AMSReplyPipe::~AMSReplyPipe() noexcept {
-   std::fclose(pipe);
-}
-
-
-void AMSReplyPipe::send_return(AMSPipe::Status status, const std::string& method, const std::string& argument, const std::string& message) {
+void AMSPipe::send_return(AMSPipe::Status status, const std::string& method, const std::string& argument, const std::string& message) {
    std::stringstream buf;
 
    buf << '{';
@@ -406,7 +399,7 @@ void write_real_2darray_with_dim(std::ostream& os, const std::string& key, const
 }
 
 
-void AMSReplyPipe::send_results(const AMSPipe::Results& results) {
+void AMSPipe::send_results(const AMSPipe::Results& results) {
    std::stringstream buf;
 
    buf << '{';
@@ -431,7 +424,7 @@ void AMSReplyPipe::send_results(const AMSPipe::Results& results) {
 }
 
 
-void AMSReplyPipe::send(std::stringstream& buf) {
+void AMSPipe::send(std::stringstream& buf) {
    auto tmp = buf.str();
 
    // DEBUG
@@ -441,10 +434,10 @@ void AMSReplyPipe::send(std::stringstream& buf) {
    // DEBUG
 
    int32_t msgsize = tmp.size();
-   if (std::fwrite(&msgsize, sizeof(msgsize), 1, pipe) != 1)
+   if (std::fwrite(&msgsize, sizeof(msgsize), 1, reply_pipe) != 1)
       throw AMSPipe::Error(AMSPipe::Status::runtime_error, "", "", "Could not write size of outgoing message to reply pipe");
-   if (std::fwrite(&tmp[0], sizeof(tmp[0]), tmp.size(), pipe) != tmp.size())
+   if (std::fwrite(&tmp[0], sizeof(tmp[0]), tmp.size(), reply_pipe) != tmp.size())
       throw AMSPipe::Error(AMSPipe::Status::runtime_error, "", "", "Could not write outgoing message to reply pipe");
-   if (std::fflush(pipe) != 0)
+   if (std::fflush(reply_pipe) != 0)
       throw AMSPipe::Error(AMSPipe::Status::runtime_error, "", "", "Could not flush reply pipe");
 }
