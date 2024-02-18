@@ -35,7 +35,7 @@ contains
 
       print *, "AMSPipe demo: Fortran"
 
-      call pipe%New("call_pipe", "reply_pipe")
+      call pipe%New()
 
       msgloop: do while (.true.)
          call pipe%Receive(msg)

@@ -8,11 +8,11 @@
 
 // ===== AMSPipe =============================================================================================================
 
-AMSPipe::AMSPipe(const std::string& call_filename, const std::string& reply_filename) {
-   call_pipe = std::fopen(call_filename.c_str(), "r");
-   if (!call_pipe) throw std::runtime_error("Could not open call pipe: "+call_filename);
-   reply_pipe = std::fopen(reply_filename.c_str(), "w");
-   if (!reply_pipe) throw std::runtime_error("Could not open reply pipe: "+reply_filename);
+AMSPipe::AMSPipe() {
+   call_pipe = std::fopen("call_pipe", "r");
+   if (!call_pipe) throw std::runtime_error("Could not open call pipe");
+   reply_pipe = std::fopen("reply_pipe", "w");
+   if (!reply_pipe) throw std::runtime_error("Could not open reply pipe");
 }
 
 

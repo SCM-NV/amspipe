@@ -89,7 +89,7 @@ void delete_amspipe_results(amspipe_results_t* results);
 // ===== AMSPipe =============================================================================================================
 
 typedef struct { void* p; } amspipe_t;
-amspipe_t new_amspipe(const char* call_filename, const char* reply_filename);
+amspipe_t new_amspipe(void);
 void delete_amspipe(amspipe_t* cp);
 
 // ===== call pipe =============================================================================================================

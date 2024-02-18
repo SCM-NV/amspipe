@@ -23,7 +23,7 @@ double LJ_potential(int nAtoms, const double* coords, double* gradients);
 int main(void) {
    printf("AMSPipe demo: C\n");
 
-   amspipe_t        pipe = new_amspipe(NULL, NULL);
+   amspipe_t        pipe = new_amspipe();
    amspipe_message_t msg = new_amspipe_message();
 
    // Variables holding our current system:

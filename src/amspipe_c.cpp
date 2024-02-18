@@ -100,13 +100,9 @@ void delete_amspipe_results(amspipe_results_t* results) {
 
 // ===== AMSPipe =============================================================================================================
 
-amspipe_t new_amspipe(const char* call_filename, const char* reply_filename) {
+amspipe_t new_amspipe() {
    amspipe_t ret;
-   if (call_filename && reply_filename) {
-      ret.p = new AMSPipe(call_filename, reply_filename);
-   } else {
-      ret.p = new AMSPipe();
-   }
+   ret.p = new AMSPipe();
    return ret;
 }
 

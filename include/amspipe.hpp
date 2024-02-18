@@ -74,7 +74,7 @@ class AMSPipe {
       int32_t dipoleGradients_dim[2] = {0,0};
    };
 
-      AMSPipe(const std::string& call_filename="call_pipe", const std::string& reply_filename="reply_pipe");
+      AMSPipe();
       ~AMSPipe() noexcept;
 
       // Method to receive a generic message on the call pipe:

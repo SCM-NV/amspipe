@@ -197,10 +197,9 @@ module AMSPipeModule
       procedure, public  :: Send_results
    end type
    interface
-      type(amspipe_t) function new_amspipe(call_filename, reply_filename) bind(C, name="new_amspipe")
+      type(amspipe_t) function new_amspipe() bind(C, name="new_amspipe")
          import
          implicit none
-         character(C_CHAR), intent(in) :: call_filename(*), reply_filename(*)
       end function
       subroutine delete_amspipe(pipe) bind(C, name="delete_amspipe")
          import
@@ -377,11 +376,9 @@ contains
 ! ===== AMSPipe ==============================================================================================================
 
 
-   subroutine NewAMSPipe(self, call_filename, reply_filename)
+   subroutine NewAMSPipe(self)
       class(AMSPipe), intent(out) :: self
-      character(*),   intent(in)  :: call_filename
-      character(*),   intent(in)  :: reply_filename
-      self%pipe = new_amspipe(call_filename//C_NULL_CHAR, reply_filename//C_NULL_CHAR)
+      self%pipe = new_amspipe()
    end subroutine
 
 
