@@ -34,8 +34,11 @@ AMSPipe::Message AMSPipe::receive() {
    // Read the entire message from the pipe into a std::stringstream:
    std::string str;
    str.resize(msgsize);
-   if (std::fread(&str[0], sizeof(str[0]), str.size(), call_pipe) != str.size())
-      throw AMSPipe::Error(AMSPipe::Status::runtime_error, "", "", "Could not read incoming message from call pipe");
+   for (size_t pos = 0, nread = 0; pos < (size_t) msgsize; pos += nread) {
+      nread = fread(&str[pos], sizeof(str[0]), msgsize - pos, call_pipe);
+      if (nread == 0)
+         throw AMSPipe::Error(AMSPipe::Status::runtime_error, "", "", "Could not read incoming message from call pipe");
+   }
 
    // DEBUG!!!
    //std::cout << "==CALL=================" << std::endl;
@@ -436,8 +439,11 @@ void AMSPipe::send(std::stringstream& buf) {
    int32_t msgsize = tmp.size();
    if (std::fwrite(&msgsize, sizeof(msgsize), 1, reply_pipe) != 1)
       throw AMSPipe::Error(AMSPipe::Status::runtime_error, "", "", "Could not write size of outgoing message to reply pipe");
-   if (std::fwrite(&tmp[0], sizeof(tmp[0]), tmp.size(), reply_pipe) != tmp.size())
-      throw AMSPipe::Error(AMSPipe::Status::runtime_error, "", "", "Could not write outgoing message to reply pipe");
+   for (size_t pos = 0, nwritten = 0; pos < (size_t) msgsize; pos += nwritten) {
+      nwritten = fwrite(&tmp[pos], sizeof(tmp[0]), msgsize - pos, reply_pipe);
+      if (nwritten == 0)
+         throw AMSPipe::Error(AMSPipe::Status::runtime_error, "", "", "Could not write outgoing message to reply pipe");
+   }
    if (std::fflush(reply_pipe) != 0)
       throw AMSPipe::Error(AMSPipe::Status::runtime_error, "", "", "Could not flush reply pipe");
 }
