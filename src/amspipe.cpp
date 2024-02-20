@@ -3,22 +3,59 @@
 #include <ios>
 #include <iostream>
 
+#ifdef _WIN32
+#include <cerrno>
+#include <direct.h>
+#endif
+
 #include "ubjson.hpp"
 
 
 // ===== AMSPipe =============================================================================================================
 
 AMSPipe::AMSPipe() {
+#ifdef _WIN32
+   // Single Win32 bidirectional named pipe, named after the current directory
+   std::string pipe_path(1024, '\0');
+   char *ret;
+   while ((ret = _getcwd(&pipe_path[0], pipe_path.size())) == NULL && errno == ERANGE && pipe_path.size() <= 1024*1024) {
+      // Buffer was too small, grow it up to a sanity limit of 1 MiB
+      pipe_path.resize(2*pipe_path.size());
+   }
+   if (!ret) throw std::runtime_error("Error getting the current working directory");
+   pipe_path.resize(pipe_path.find('\0'));
+   if (pipe_path.back() == '/' || pipe_path.back() == '\\') {
+      // Prevent duplicate slash (present if CWD is the root directory of a drive) when /amspipe is added below
+      pipe_path.pop_back();
+   }
+   for (char &c : pipe_path) {
+      switch (c) {
+         case ':':
+         case '/':
+         case '\\':
+            c = '_';
+            break;
+      }
+   }
+   pipe_path = "\\\\.\\pipe\\" + pipe_path + "_amspipe";
+   call_pipe = std::fopen(pipe_path.c_str(), "rb+");
+   if (!call_pipe) throw std::runtime_error("Could not open pipe \"" + pipe_path + '"');
+   reply_pipe = call_pipe;
+#else
+   // Pair of POSIX FIFOs in the current directory
    call_pipe = std::fopen("call_pipe", "r");
    if (!call_pipe) throw std::runtime_error("Could not open call pipe");
    reply_pipe = std::fopen("reply_pipe", "w");
    if (!reply_pipe) throw std::runtime_error("Could not open reply pipe");
+#endif
 }
 
 
 AMSPipe::~AMSPipe() noexcept {
    std::fclose(call_pipe);
+#ifndef _WIN32
    std::fclose(reply_pipe);
+#endif
 }
 
 // ===== call pipe =============================================================================================================
