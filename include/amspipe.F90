@@ -431,7 +431,7 @@ contains
       real(C_DOUBLE),     allocatable, intent(out) :: bondOrders(:)
       character(:),       allocatable, intent(out) :: atomicInfo(:)
 
-      integer(C_INT64_T) :: iAtom, numAtoms, numLatVecs, numBonds
+      integer(C_INT64_T) :: iAtom, numAtoms = 0, numLatVecs = 0, numBonds = 0
       type(C_PTR) :: errCptr = C_NULL_PTR, atSymsCptr = C_NULL_PTR, crdsCptr = C_NULL_PTR, latVecsCPtr = C_NULL_PTR, &
                      bndsCptr = C_NULL_PTR, bndOrdsCptr = C_NULL_PTR, atInfCptr = C_NULL_PTR
       type(C_PTR),        pointer :: atSymsFptr(:)    => null()
