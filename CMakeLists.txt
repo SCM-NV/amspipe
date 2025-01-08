@@ -51,12 +51,33 @@ install(
    EXPORT amspipeTargets
    FILE_SET HEADERS
 )
+set(ConfigPackageLocation lib/cmake/amspipe)
 install(
   EXPORT amspipeTargets
   FILE amspipeTargets.cmake
-  DESTINATION lib/cmake/amspipe
+  NAMESPACE amspipe::
+  DESTINATION ${ConfigPackageLocation}
 )
 
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/amspipeConfigVersion.cmake"
+  COMPATIBILITY AnyNewerVersion
+)
+export(EXPORT amspipeTargets
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/amspipeTargets.cmake"
+  NAMESPACE amspipe::
+)
+configure_file(amspipeConfig.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/amspipeConfig.cmake"
+  COPYONLY
+)
+install(
+  FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/amspipeConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/amspipeConfigVersion.cmake"
+  DESTINATION ${ConfigPackageLocation}
+)
 
 if (AMSPIPE_BUILD_DEMOS)
 
