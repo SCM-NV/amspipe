@@ -9,6 +9,9 @@
 #include <stdexcept>
 #include <cstdio>
 
+namespace ubjson {
+   class outstream;
+};
 
 class AMSPipe {
    public:
@@ -119,7 +122,7 @@ class AMSPipe {
 
    private:
       std::FILE *call_pipe, *reply_pipe;
-      void send(std::stringstream& buf);
+      void send(const ubjson::outstream& buf);
 
 };
 

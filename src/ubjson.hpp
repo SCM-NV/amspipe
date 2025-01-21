@@ -1,8 +1,10 @@
 #ifndef UBJSON_HPP_INCLUDED
 #define UBJSON_HPP_INCLUDED
 
+#include <cstring>
 #include <stdint.h>
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include "amspipe.hpp"
@@ -16,6 +18,7 @@ namespace ubjson {
          :  AMSPipe::Error(AMSPipe::Status::decode_error, "", "", message) {}
    };
 
+   class outstream;
 
    // Methods for reading UBJSON from a std::istream
 
@@ -38,20 +41,17 @@ namespace ubjson {
 
    // Methods for writing UBJSON to a std::ostream
 
-   void write_int(std::ostream& os, int8_t i);
-   void write_int(std::ostream& os, uint8_t U);
-   void write_int(std::ostream& os, int16_t I);
-   void write_int(std::ostream& os, int32_t l);
-   //void write_int(std::ostream& os, int64_t L);
-   void write_real(std::ostream& os, float d);
-   void write_real(std::ostream& os, double D);
-   void write_key(std::ostream& os, const std::string& key); // like a string, but without preceding S marker
-   void write_string(std::ostream& os, const std::string& str);
+   void write_int(outstream& os, int8_t i);
+   void write_int(outstream& os, uint8_t U);
+   void write_int(outstream& os, int16_t I);
+   void write_int(outstream& os, int32_t l);
+   //void write_int(outstream& os, int64_t L);
+   void write_real(outstream& os, float d);
+   void write_real(outstream& os, double D);
+   void write_key(outstream& os, const std::string& key); // like a string, but without preceding S marker
+   void write_string(outstream& os, const std::string& str);
 
-   void write_real_array(std::ostream& os, const double* arr, int32_t n);
-
-};
-
+   void write_real_array(outstream& os, const double* arr, int32_t n);
 
 // ===== Methods for converting between big endian (UBJSON) and native endian ====================================================
 
@@ -87,6 +87,33 @@ inline float bswap(float x) {
    i = bswap_32(i);
    return *reinterpret_cast<float*>(&i);
 }
+
+   class outstream {
+      public:
+         const std::vector<char>& buffer() const { return buf; };
+
+         template<typename T> outstream& operator<<(T x) { write(x); return *this; }
+
+         void write(char c) { buf.push_back(c); }
+         void write(std::string s) { write(s.data(), s.size()); }
+
+         template<typename T> void write(T x) {
+            write(&x, 1);
+         }
+
+         template<typename T> void write(T* x, size_t nelem) {
+            size_t pos = buf.size(), elem_size = sizeof(T);
+            buf.resize(pos + elem_size * nelem);
+            for (size_t i = 0; i < nelem; i++, pos += elem_size) {
+               T tmp = bswap(x[i]);
+               memcpy(&(buf[pos]), &tmp, elem_size);
+            }
+         }
+
+      private:
+         std::vector<char> buf;
+   };
+};
 
 
 // ===== Methods for reading UBJSON from a std::istream ==========================================================================
@@ -293,54 +320,54 @@ std::vector<double> ubjson::read_real_array(std::istream& is) {
 // ===== Methods for writing UBJSON to a std::ostream ============================================================================
 
 
-void ubjson::write_int(std::ostream& os, int8_t i) {
+void ubjson::write_int(outstream& os, int8_t i) {
    os << 'i';
    os.write(reinterpret_cast<const char*>(&i), sizeof(i));
 }
 
 
-void ubjson::write_int(std::ostream& os, uint8_t U) {
+void ubjson::write_int(outstream& os, uint8_t U) {
    os << 'U';
    os.write(reinterpret_cast<const char*>(&U), sizeof(U));
 }
 
 
-void ubjson::write_int(std::ostream& os, int16_t I) {
+void ubjson::write_int(outstream& os, int16_t I) {
    os << 'I';
    I = bswap(I);
    os.write(reinterpret_cast<const char*>(&I), sizeof(I));
 }
 
 
-void ubjson::write_int(std::ostream& os, int32_t l) {
+void ubjson::write_int(outstream& os, int32_t l) {
    os << 'l';
    l = bswap(l);
    os.write(reinterpret_cast<const char*>(&l), sizeof(l));
 }
 
 
-//void ubjson::write_int(std::ostream& os, int64_t L) {
+//void ubjson::write_int(outstream& os, int64_t L) {
 //   os << 'L';
 //   L = bswap(L);
 //   os.write(reinterpret_cast<const char*>(&L), sizeof(L));
 //}
 
 
-void ubjson::write_real(std::ostream& os, float d) {
+void ubjson::write_real(outstream& os, float d) {
    os << 'd';
    d = bswap(d);
    os.write(reinterpret_cast<const char*>(&d), sizeof(d));
 }
 
 
-void ubjson::write_real(std::ostream& os, double D) {
+void ubjson::write_real(outstream& os, double D) {
    os << 'D';
    D = bswap(D);
    os.write(reinterpret_cast<const char*>(&D), sizeof(D));
 }
 
 
-void ubjson::write_key(std::ostream& os, const std::string& key) {
+void ubjson::write_key(outstream& os, const std::string& key) {
    os << 'i';
    int8_t keylen = key.size();
    os.write(reinterpret_cast<const char*>(&keylen), sizeof(keylen));
@@ -348,7 +375,7 @@ void ubjson::write_key(std::ostream& os, const std::string& key) {
 }
 
 
-void ubjson::write_string(std::ostream& os, const std::string& str) {
+void ubjson::write_string(outstream& os, const std::string& str) {
    os << 'S';
    int32_t strlen = str.size();
    ubjson::write_int(os, strlen);
@@ -356,7 +383,7 @@ void ubjson::write_string(std::ostream& os, const std::string& str) {
 }
 
 
-void ubjson::write_real_array(std::ostream& os, const double* arr, int32_t n) {
+void ubjson::write_real_array(outstream& os, const double* arr, int32_t n) {
    os << '[' << '$' << 'D' << '#';
    ubjson::write_int(os, n);
    for (int32_t i=0; i < n; ++i) {

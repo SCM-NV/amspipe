@@ -403,7 +403,7 @@ void AMSPipe::extract_DeleteResults(AMSPipe::Message& msg, std::string& title) c
 // ===== reply pipe ============================================================================================================
 
 void AMSPipe::send_return(AMSPipe::Status status, const std::string& method, const std::string& argument, const std::string& message) {
-   std::stringstream buf;
+   ubjson::outstream buf;
 
    buf << '{';
    ubjson::write_key(buf, "return");
@@ -428,7 +428,7 @@ void AMSPipe::send_return(AMSPipe::Status status, const std::string& method, con
 }
 
 
-void write_real_2darray_with_dim(std::ostream& os, const std::string& key, const double* arr, const int32_t dim[2]) {
+void write_real_2darray_with_dim(ubjson::outstream& os, const std::string& key, const double* arr, const int32_t dim[2]) {
    ubjson::write_key(os, key);
    ubjson::write_real_array(os, arr, dim[0]*dim[1]);
    ubjson::write_key(os, key+"_dim_");
@@ -440,7 +440,7 @@ void write_real_2darray_with_dim(std::ostream& os, const std::string& key, const
 
 
 void AMSPipe::send_results(const AMSPipe::Results& results) {
-   std::stringstream buf;
+   ubjson::outstream buf;
 
    buf << '{';
    ubjson::write_key(buf, "results");
@@ -464,8 +464,8 @@ void AMSPipe::send_results(const AMSPipe::Results& results) {
 }
 
 
-void AMSPipe::send(std::stringstream& buf) {
-   auto tmp = buf.str();
+void AMSPipe::send(const ubjson::outstream& buf) {
+   const auto &tmp = buf.buffer();
 
    // DEBUG
    //std::cout << "==REPLY================" << std::endl;
