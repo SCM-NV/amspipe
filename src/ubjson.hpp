@@ -71,13 +71,18 @@ namespace ubjson {
   #include <byteswap.h>  // bswap_16 bswap_32 bswap_64
 #endif
 
-inline double bswap_64f(double x) {
+inline char bswap(char c) { return c; }
+inline int8_t bswap(int8_t i) { return i; }
+inline int16_t bswap(int16_t s) { return bswap_16(s); }
+inline int32_t bswap(int32_t l) { return bswap_32(l); }
+inline int64_t bswap(int64_t l) { return bswap_64(l); }
+
+inline double bswap(double x) {
    uint64_t i = *reinterpret_cast<uint64_t*>(&x);
    i = bswap_64(i);
    return *reinterpret_cast<double*>(&i);
 }
-
-inline float bswap_32f(float x) {
+inline float bswap(float x) {
    uint32_t i = *reinterpret_cast<uint32_t*>(&x);
    i = bswap_32(i);
    return *reinterpret_cast<float*>(&i);
@@ -140,15 +145,15 @@ int64_t ubjson::read_int(std::istream& is, char marker) {
    } else if (marker == 'I') {
       int16_t I;
       is.read(reinterpret_cast<char*>(&I), sizeof(I));
-      return bswap_16(I);
+      return bswap(I);
    } else if (marker == 'l') {
       int32_t l;
       is.read(reinterpret_cast<char*>(&l), sizeof(l));
-      return bswap_32(l);
+      return bswap(l);
    } else if (marker == 'L') {
       int64_t L;
       is.read(reinterpret_cast<char*>(&L), sizeof(L));
-      return bswap_64(L);
+      return bswap(L);
    } else {
       throw ubjson::Error(std::string("unexpected integer type: '")+marker);
    }
@@ -168,11 +173,11 @@ double ubjson::read_real(std::istream& is, char marker) {
    if (marker == 'd') {
       float d;
       is.read(reinterpret_cast<char*>(&d), sizeof(d));
-      return bswap_32f(d);
+      return bswap(d);
    } else if (marker == 'D') {
       double D;
       is.read(reinterpret_cast<char*>(&D), sizeof(D));
-      return bswap_64f(D);
+      return bswap(D);
    } else {
       throw ubjson::Error(std::string("unexpected real type: ")+marker);
    }
@@ -268,7 +273,7 @@ std::vector<double> ubjson::read_real_array(std::istream& is) {
       auto n = ubjson::read_int(is);
       std::vector<double> v(n);
       is.read(reinterpret_cast<char*>(v.data()), n*sizeof(v[0])); // TODO: support float32 here
-      for (double& D: v) D = bswap_64f(D);
+      for (double& D: v) D = bswap(D);
       return v;
 
    } else if (m == '#') {
@@ -302,35 +307,35 @@ void ubjson::write_int(std::ostream& os, uint8_t U) {
 
 void ubjson::write_int(std::ostream& os, int16_t I) {
    os << 'I';
-   I = bswap_16(I);
+   I = bswap(I);
    os.write(reinterpret_cast<const char*>(&I), sizeof(I));
 }
 
 
 void ubjson::write_int(std::ostream& os, int32_t l) {
    os << 'l';
-   l = bswap_32(l);
+   l = bswap(l);
    os.write(reinterpret_cast<const char*>(&l), sizeof(l));
 }
 
 
 //void ubjson::write_int(std::ostream& os, int64_t L) {
 //   os << 'L';
-//   L = bswap_64(L);
+//   L = bswap(L);
 //   os.write(reinterpret_cast<const char*>(&L), sizeof(L));
 //}
 
 
 void ubjson::write_real(std::ostream& os, float d) {
    os << 'd';
-   d = bswap_32f(d);
+   d = bswap(d);
    os.write(reinterpret_cast<const char*>(&d), sizeof(d));
 }
 
 
 void ubjson::write_real(std::ostream& os, double D) {
    os << 'D';
-   D = bswap_64f(D);
+   D = bswap(D);
    os.write(reinterpret_cast<const char*>(&D), sizeof(D));
 }
 
@@ -355,7 +360,7 @@ void ubjson::write_real_array(std::ostream& os, const double* arr, int32_t n) {
    os << '[' << '$' << 'D' << '#';
    ubjson::write_int(os, n);
    for (int32_t i=0; i < n; ++i) {
-      double D = bswap_64f(arr[i]);
+      double D = bswap(arr[i]);
       os.write(reinterpret_cast<const char*>(&D), sizeof(D));
    }
 }
