@@ -29,7 +29,6 @@ target_sources(amspipe
    PRIVATE
       src/amspipe.cpp
       src/amspipe_c.cpp
-      src/ubjson.cpp
       src/ubjson.hpp
    PUBLIC FILE_SET HEADERS
    BASE_DIRS include
