@@ -1,5 +1,5 @@
-#ifndef HPP_INCLUDED
-#define HPP_INCLUDED
+#ifndef UBJSON_HPP_INCLUDED
+#define UBJSON_HPP_INCLUDED
 
 #include <stdint.h>
 #include <iostream>
@@ -360,4 +360,4 @@ void ubjson::write_real_array(std::ostream& os, const double* arr, int32_t n) {
    }
 }
 
-#endif // HPP_INCLUDED
+#endif // UBJSON_HPP_INCLUDED
