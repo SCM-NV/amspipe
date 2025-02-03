@@ -78,14 +78,20 @@ inline int32_t bswap(int32_t l) { return bswap_32(l); }
 inline int64_t bswap(int64_t l) { return bswap_64(l); }
 
 inline double bswap(double x) {
-   uint64_t i = *reinterpret_cast<uint64_t*>(&x);
-   i = bswap_64(i);
-   return *reinterpret_cast<double*>(&i);
+   int64_t tmp;
+   double res;
+   memcpy(&tmp, &x, sizeof(double));
+   tmp = bswap(tmp);
+   memcpy(&res, &tmp, sizeof(double));
+   return res;
 }
 inline float bswap(float x) {
-   uint32_t i = *reinterpret_cast<uint32_t*>(&x);
-   i = bswap_32(i);
-   return *reinterpret_cast<float*>(&i);
+   int32_t tmp;
+   float res;
+   memcpy(&tmp, &x, sizeof(float));
+   tmp = bswap(tmp);
+   memcpy(&res, &tmp, sizeof(float));
+   return res;
 }
 
    class outstream {
