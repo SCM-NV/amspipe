@@ -3,6 +3,7 @@
 #ifndef AMSPIPE_HPP_INCLUDED
 #define AMSPIPE_HPP_INCLUDED
 
+#include <memory>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -122,7 +123,8 @@ class AMSPipe {
 
    private:
       std::FILE *call_pipe, *reply_pipe;
-      void send(const ubjson::outstream& buf);
+      std::unique_ptr<ubjson::outstream> sendBuffer;
+      void send(ubjson::outstream& buf);
 
 };
 

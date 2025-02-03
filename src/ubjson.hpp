@@ -97,6 +97,7 @@ inline float bswap(float x) {
    class outstream {
       public:
          const std::vector<char>& buffer() const { return buf; };
+         void clear() { buf.clear(); }
 
          template<typename T> outstream& operator<<(T x) { write(x); return *this; }
 

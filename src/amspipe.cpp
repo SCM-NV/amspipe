@@ -13,7 +13,7 @@
 
 // ===== AMSPipe =============================================================================================================
 
-AMSPipe::AMSPipe() {
+AMSPipe::AMSPipe() : sendBuffer(new ubjson::outstream()) {
 #ifdef _WIN32
    // Single Win32 bidirectional named pipe, named after the current directory
    std::string pipe_path(1024, '\0');
@@ -403,7 +403,7 @@ void AMSPipe::extract_DeleteResults(AMSPipe::Message& msg, std::string& title) c
 // ===== reply pipe ============================================================================================================
 
 void AMSPipe::send_return(AMSPipe::Status status, const std::string& method, const std::string& argument, const std::string& message) {
-   ubjson::outstream buf;
+   ubjson::outstream &buf = *(sendBuffer.get());
 
    buf << '{';
    ubjson::write_key(buf, "return");
@@ -440,7 +440,7 @@ void write_real_2darray_with_dim(ubjson::outstream& os, const std::string& key, 
 
 
 void AMSPipe::send_results(const AMSPipe::Results& results) {
-   ubjson::outstream buf;
+   ubjson::outstream &buf = *(sendBuffer.get());
 
    buf << '{';
    ubjson::write_key(buf, "results");
@@ -464,7 +464,7 @@ void AMSPipe::send_results(const AMSPipe::Results& results) {
 }
 
 
-void AMSPipe::send(const ubjson::outstream& buf) {
+void AMSPipe::send(ubjson::outstream& buf) {
    const auto &tmp = buf.buffer();
 
    // DEBUG
@@ -483,4 +483,5 @@ void AMSPipe::send(const ubjson::outstream& buf) {
    }
    if (std::fflush(reply_pipe) != 0)
       throw AMSPipe::Error(AMSPipe::Status::runtime_error, "", "", "Could not flush reply pipe");
+   buf.clear();
 }
