@@ -411,7 +411,9 @@ contains
       type(AMSPipeError), allocatable, intent(out) :: error
       integer(C_INT64_T),              intent(out) :: version
 
-      type(C_PTR) :: errCptr = C_NULL_PTR
+      type(C_PTR) :: errCptr
+
+      errCptr = C_NULL_PTR
       call amspipe_extract_Hello(self%pipe, message%msg, errCptr, version)
       if (C_F_error(errCptr, error)) return
 
@@ -431,16 +433,34 @@ contains
       real(C_DOUBLE),     allocatable, intent(out) :: bondOrders(:)
       character(:),       allocatable, intent(out) :: atomicInfo(:)
 
-      integer(C_INT64_T) :: iAtom, numAtoms = 0, numLatVecs = 0, numBonds = 0
-      type(C_PTR) :: errCptr = C_NULL_PTR, atSymsCptr = C_NULL_PTR, crdsCptr = C_NULL_PTR, latVecsCPtr = C_NULL_PTR, &
-                     bndsCptr = C_NULL_PTR, bndOrdsCptr = C_NULL_PTR, atInfCptr = C_NULL_PTR
-      type(C_PTR),        pointer :: atSymsFptr(:)    => null()
-      real(C_DOUBLE),     pointer :: crdsFptr(:,:)    => null()
-      real(C_DOUBLE),     pointer :: latVecsFptr(:,:) => null()
-      integer(C_INT64_T), pointer :: bndsFptr(:,:)    => null()
-      real(C_DOUBLE),     pointer :: bndOrdsFptr(:)   => null()
-      type(C_PTR),        pointer :: atInfFptr(:)     => null()
+      integer(C_INT64_T) :: iAtom, numAtoms, numLatVecs, numBonds
+      type(C_PTR) :: errCptr, atSymsCptr, crdsCptr, latVecsCPtr, bndsCptr, bndOrdsCptr, atInfCptr
+      type(C_PTR),        pointer :: atSymsFptr(:)
+      real(C_DOUBLE),     pointer :: crdsFptr(:,:)
+      real(C_DOUBLE),     pointer :: latVecsFptr(:,:)
+      integer(C_INT64_T), pointer :: bndsFptr(:,:)
+      real(C_DOUBLE),     pointer :: bndOrdsFptr(:)
+      type(C_PTR),        pointer :: atInfFptr(:)
       integer(C_SIZE_T) :: symMaxLen, atInfMaxLen
+
+      numAtoms = 0
+      numLatVecs = 0
+      numBonds = 0
+
+      errCptr = C_NULL_PTR
+      atSymsCptr = C_NULL_PTR
+      crdsCptr = C_NULL_PTR
+      latVecsCPtr = C_NULL_PTR
+      bndsCptr = C_NULL_PTR
+      bndOrdsCptr = C_NULL_PTR
+      atInfCptr = C_NULL_PTR
+
+      atSymsFptr => null()
+      crdsFptr => null()
+      latVecsFptr => null()
+      bndsFptr => null()
+      bndOrdsFptr => null()
+      atInfFptr => null()
 
       call amspipe_extract_SetSystem(self%pipe, message%msg, errCptr, numAtoms, atSymsCptr, &
                                      crdsCptr, numLatVecs, latVecsCPtr, totalCharge, &
@@ -514,7 +534,9 @@ contains
       type(AMSPipeError), allocatable, intent(out)         :: error
       real(C_DOUBLE), contiguous,      intent(out), target :: coords(:,:)
 
-      type(C_PTR) :: errCptr = C_NULL_PTR
+      type(C_PTR) :: errCptr
+
+      errCptr = C_NULL_PTR
       call amspipe_extract_SetCoords(self%pipe, message%msg, errCptr, C_LOC(coords(1,1)))
       if (C_F_error(errCptr, error)) return
 
@@ -528,8 +550,13 @@ contains
       real(C_DOUBLE),     allocatable, intent(out) :: latticeVectors(:,:)
 
       integer(C_INT64_T) :: numLatVecs
-      type(C_PTR) :: errCptr = C_NULL_PTR, latVecsCPtr = C_NULL_PTR
-      real(C_DOUBLE), pointer :: latVecsFptr(:,:) => null()
+      type(C_PTR) :: errCptr, latVecsCPtr
+      real(C_DOUBLE), pointer :: latVecsFptr(:,:)
+
+      errCptr = C_NULL_PTR
+      latVecsCPtr = C_NULL_PTR
+
+      latVecsFptr => null()
 
       call amspipe_extract_SetLattice(self%pipe, message%msg, errCptr, numLatVecs, latVecsCPtr)
       if (C_F_error(errCptr, error)) return
@@ -556,8 +583,11 @@ contains
       character(:),       allocatable, intent(out) :: prevTitle
 
       type(amspipe_solverequest_t) :: rq
-      type(C_PTR) :: errCptr = C_NULL_PTR, ptCptr = C_NULL_PTR
+      type(C_PTR) :: errCptr, ptCptr
       integer(C_BOOL_INTKIND) :: kr
+
+      errCptr = C_NULL_PTR
+      ptCptr = C_NULL_PTR
 
       call amspipe_extract_Solve(self%pipe, message%msg, errCptr, rq, kr, ptCptr)
       if (C_F_error(errCptr, error)) return
@@ -589,7 +619,11 @@ contains
       type(AMSPipeError), allocatable, intent(out) :: error
       character(:),       allocatable, intent(out) :: title
 
-      type(C_PTR) :: errCptr = C_NULL_PTR, tCptr = C_NULL_PTR
+      type(C_PTR) :: errCptr, tCptr
+
+      errCptr = C_NULL_PTR
+      tCptr = C_NULL_PTR
+
       call amspipe_extract_DeleteResults(self%pipe, message%msg, errCptr, tCptr)
       if (C_F_error(errCptr, error)) return
 

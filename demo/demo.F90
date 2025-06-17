@@ -25,10 +25,12 @@ contains
       character(:),       allocatable :: atomSymbols(:)
       real(C_DOUBLE),     allocatable :: coords(:,:)
       real(C_DOUBLE),     allocatable :: latticeVectors(:,:)
-      real(C_DOUBLE)                  :: totalCharge = 0.0
+      real(C_DOUBLE)                  :: totalCharge
       integer(C_INT64_T), allocatable :: bonds(:,:)
       real(C_DOUBLE),     allocatable :: bondOrders(:)
       character(:),       allocatable :: atomicInfo(:)
+
+      totalCharge = 0.0
 
       ! We do not make an attempt to keep track of the cached results in the Fortran language demo.
       ! Just too much effort since there is no dictionary in standard Fortran ...
