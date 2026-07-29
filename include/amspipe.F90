@@ -265,7 +265,11 @@ module AMSPipeModule
          type(amspipe_t),              value         :: pipe        ! amspipe_t
          type(amspipe_message_t),      value         :: message     ! amspipe_message_t
          type(C_PTR),                  intent(inout) :: error       ! amspipe_error_t**
-         type(amspipe_solverequest_t), intent(out)   :: request     ! amspipe_solverequest_t*
+         ! NB: request must be intent(inout), NOT intent(out): the C side reads and
+         !     frees request%title on entry, so the incoming value is significant.
+         !     With intent(out) the compiler may elide the caller-side default
+         !     initialization, and C then calls free() on stack garbage.
+         type(amspipe_solverequest_t), intent(inout) :: request     ! amspipe_solverequest_t*
          integer(C_BOOL_INTKIND),      intent(out)   :: keepResults ! bool*
          type(C_PTR),                  intent(inout) :: prevTitle   ! char**
       end subroutine
@@ -588,6 +592,7 @@ contains
 
       errCptr = C_NULL_PTR
       ptCptr = C_NULL_PTR
+      rq%title = C_NULL_PTR ! C frees this pointer on entry, it must never be garbage
 
       call amspipe_extract_Solve(self%pipe, message%msg, errCptr, rq, kr, ptCptr)
       if (C_F_error(errCptr, error)) return
